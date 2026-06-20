@@ -1,0 +1,212 @@
+﻿import { useState, useEffect } from 'react';
+import { Search, Edit, Trash2, Plus, Users, Save, X } from 'lucide-react';
+import Layout from './Layout';
+
+type Page = 'dashboard' | 'registro' | 'credito' | 'amortizacion' | 'clientes' | 'solicitudes' | 'configuracion';
+
+interface Cliente {
+  id_cliente: string;
+  nombre_cliente: string;
+  dni_cliente: string;
+  telefono_cliente: string;
+  direccion_cliente: string;
+  fecha_registro: string;
+}
+
+interface ListaClientesProps {
+  onBack: () => void;
+  onNuevoCliente: () => void;
+  userName: string;
+  currentPage: Page;
+  onNavigate: (page: Page) => void;
+  onLogout: () => void;
+}
+
+const inputClass = "input-soft";
+const labelClass = "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5";
+
+export default function ListaClientes({ onBack, onNuevoCliente, userName, currentPage, onNavigate, onLogout }: ListaClientesProps) {
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [busqueda, setBusqueda] = useState('');
+  const [editando, setEditando] = useState<Cliente | null>(null);
+  const [editForm, setEditForm] = useState<Cliente | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('clientes');
+    if (saved) setClientes(JSON.parse(saved));
+  }, []);
+
+  const eliminarCliente = (id: string) => {
+    if (window.confirm('¿Está seguro de eliminar este cliente?')) {
+      const nuevos = clientes.filter(c => c.id_cliente !== id);
+      setClientes(nuevos);
+      localStorage.setItem('clientes', JSON.stringify(nuevos));
+    }
+  };
+
+  const abrirEdicion = (cliente: Cliente) => {
+    setEditando(cliente);
+    setEditForm({ ...cliente });
+  };
+
+  const cerrarEdicion = () => {
+    setEditando(null);
+    setEditForm(null);
+  };
+
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditForm(prev => prev ? { ...prev, [name]: value } : null);
+  };
+
+  const guardarEdicion = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editForm) return;
+    const actualizados = clientes.map(c => c.id_cliente === editForm.id_cliente ? editForm : c);
+    setClientes(actualizados);
+    localStorage.setItem('clientes', JSON.stringify(actualizados));
+    cerrarEdicion();
+  };
+
+  const filtrados = clientes.filter(c =>
+    c.nombre_cliente.toLowerCase().includes(busqueda.toLowerCase()) ||
+    c.dni_cliente.includes(busqueda) ||
+    c.telefono_cliente.includes(busqueda)
+  );
+
+  return (
+    <Layout
+      currentPage={currentPage}
+      userName={userName}
+      onNavigate={onNavigate}
+      onLogout={onLogout}
+      pageTitle="Clientes"
+    >
+      <div className="card-soft overflow-hidden">
+        {/* Toolbar */}
+        <div className="px-5 py-3 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex items-center gap-2 flex-1">
+            <Users className="w-5 h-5 text-teal-500" />
+            <p className="font-semibold text-slate-800">Lista de Clientes</p>
+            <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{clientes.length}</span>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-60">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar por nombre, DNI o teléfono…"
+                className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-2xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-400"
+              />
+            </div>
+            <button
+              onClick={onNuevoCliente}
+              className="btn-grad text-white px-4 py-2.5 rounded-2xl text-sm transition flex items-center gap-1.5 shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              Nuevo
+            </button>
+          </div>
+        </div>
+
+        {/* Table */}
+        {filtrados.length === 0 ? (
+          <div className="py-16 text-center">
+            <Users className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+            <p className="text-slate-500 text-sm">{busqueda ? 'No se encontraron clientes' : 'No hay clientes registrados'}</p>
+            <button onClick={onNuevoCliente} className="mt-3 text-violet-600 hover:underline font-semibold text-sm">
+              Registrar primer cliente
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  {['ID', 'Nombre', 'DNI', 'Teléfono', 'Dirección', 'Fecha Registro', 'Acciones'].map((h) => (
+                    <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtrados.map((cliente) => (
+                  <tr key={cliente.id_cliente} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-3 font-mono text-slate-600">{cliente.id_cliente}</td>
+                    <td className="px-4 py-3 font-medium text-slate-800">{cliente.nombre_cliente}</td>
+                    <td className="px-4 py-3 text-slate-600">{cliente.dni_cliente}</td>
+                    <td className="px-4 py-3 text-slate-600">{cliente.telefono_cliente}</td>
+                    <td className="px-4 py-3 text-slate-500 max-w-[180px] truncate">{cliente.direccion_cliente || '—'}</td>
+                    <td className="px-4 py-3 text-slate-500">{cliente.fecha_registro}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => abrirEdicion(cliente)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded transition" title="Editar">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => eliminarCliente(cliente.id_cliente)} className="p-1.5 text-red-500 hover:bg-red-50 rounded transition" title="Eliminar">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Edit modal */}
+      {editando && editForm && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={cerrarEdicion}>
+          <div className="bg-white rounded-[28px] max-w-lg w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <h3 className="font-semibold text-slate-800">Editar Cliente — ID {editando.id_cliente}</h3>
+              <button onClick={cerrarEdicion} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={guardarEdicion} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Nombre Completo <span className="text-red-500">*</span></label>
+                  <input type="text" name="nombre_cliente" value={editForm.nombre_cliente} onChange={handleEditChange}
+                    className={inputClass} required maxLength={100} />
+                </div>
+                <div>
+                  <label className={labelClass}>DNI <span className="text-red-500">*</span></label>
+                  <input type="text" name="dni_cliente" value={editForm.dni_cliente} onChange={handleEditChange}
+                    className={inputClass} required maxLength={8} pattern="[0-9]{8}" />
+                </div>
+                <div>
+                  <label className={labelClass}>Teléfono <span className="text-red-500">*</span></label>
+                  <input type="text" name="telefono_cliente" value={editForm.telefono_cliente} onChange={handleEditChange}
+                    className={inputClass} required maxLength={9} pattern="[0-9]{9}" />
+                </div>
+              </div>
+              <div>
+                <label className={labelClass}>Dirección</label>
+                <textarea name="direccion_cliente" value={editForm.direccion_cliente} onChange={handleEditChange}
+                  className={inputClass} maxLength={150} rows={2} />
+              </div>
+
+              <div className="flex gap-3 pt-2 border-t border-slate-100">
+                <button type="button" onClick={cerrarEdicion}
+                  className="flex-1 py-2.5 border border-slate-200 rounded-2xl text-slate-700 text-sm font-medium hover:bg-slate-50 transition">
+                  Cancelar
+                </button>
+                <button type="submit"
+                  className="flex-1 btn-grad text-white py-3 rounded-2xl text-sm font-bold transition flex items-center justify-center gap-2">
+                  <Save className="w-4 h-4" />
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </Layout>
+  );
+}

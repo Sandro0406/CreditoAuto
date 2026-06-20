@@ -1,0 +1,177 @@
+/* ============================================================
+   CréditoAuto · Sistema de diseño "Social Fintech"
+   Gradientes vibrantes, formas suaves y micro-interacciones
+   inspiradas en apps como Instagram / Meta.
+   ============================================================ */
+
+:root {
+  --grad-brand: linear-gradient(135deg, #4f46e5 0%, #7c3aed 48%, #db2777 100%);
+  --grad-brand-soft: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  --grad-money: linear-gradient(135deg, #059669 0%, #14b8a6 100%);
+  --grad-warm: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  --grad-sky: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+  --grad-rose: linear-gradient(135deg, #f43f5e 0%, #d946ef 100%);
+
+  --shadow-brand: 0 12px 30px -10px rgba(124, 58, 237, .55);
+  --shadow-money: 0 12px 30px -10px rgba(16, 185, 129, .5);
+  --shadow-soft: 0 10px 34px rgba(2, 6, 23, .07);
+  --shadow-card: 0 1px 2px rgba(2, 6, 23, .04), 0 14px 36px -16px rgba(2, 6, 23, .14);
+}
+
+/* ----- Tipografía ----- */
+body {
+  font-family: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+button, input, select, textarea, optgroup {
+  font-family: inherit;
+}
+
+/* ----- Fondos con gradiente ----- */
+.bg-grad-brand { background-image: var(--grad-brand); }
+.bg-grad-brand-soft { background-image: var(--grad-brand-soft); }
+.bg-grad-money { background-image: var(--grad-money); }
+.bg-grad-warm { background-image: var(--grad-warm); }
+.bg-grad-sky { background-image: var(--grad-sky); }
+.bg-grad-rose { background-image: var(--grad-rose); }
+
+/* Lienzo del área de contenido: washes de color suaves */
+.app-canvas {
+  background:
+    radial-gradient(900px 420px at 6% -8%, rgba(99, 102, 241, .12), transparent 60%),
+    radial-gradient(720px 380px at 102% -4%, rgba(236, 72, 153, .10), transparent 55%),
+    radial-gradient(620px 380px at 60% 120%, rgba(20, 184, 166, .08), transparent 55%),
+    #f6f6fb;
+}
+
+/* ----- Texto con gradiente ----- */
+.text-grad {
+  background-image: var(--grad-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* ----- Sombras ----- */
+.shadow-brand { box-shadow: var(--shadow-brand); }
+.shadow-money { box-shadow: var(--shadow-money); }
+.shadow-soft { box-shadow: var(--shadow-soft); }
+.shadow-card { box-shadow: var(--shadow-card); }
+
+/* ----- Tarjetas ----- */
+.card-soft {
+  background: #fff;
+  border-radius: 24px;
+  border: 1px solid rgba(2, 6, 23, .05);
+  box-shadow: var(--shadow-card);
+}
+
+/* ----- Efecto vidrio (glassmorphism) ----- */
+.glass {
+  background: rgba(255, 255, 255, .85);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, .55);
+}
+.glass-dark {
+  background: rgba(255, 255, 255, .08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, .18);
+}
+
+/* ----- Botón con gradiente ----- */
+.btn-grad {
+  background-image: var(--grad-brand);
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  box-shadow: var(--shadow-brand);
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.btn-grad:hover { transform: translateY(-2px); filter: brightness(1.06); box-shadow: 0 18px 38px -10px rgba(124, 58, 237, .62); }
+.btn-grad:active { transform: translateY(0); filter: brightness(.98); }
+
+.btn-money { background-image: var(--grad-money); box-shadow: var(--shadow-money); }
+.btn-money:hover { box-shadow: 0 18px 38px -10px rgba(16, 185, 129, .58); }
+
+/* ----- Inputs suaves ----- */
+.input-soft {
+  width: 100%;
+  background: #f3f3fb;
+  border: 1.5px solid transparent;
+  border-radius: 16px;
+  padding: .68rem .9rem;
+  font-size: 14px;
+  color: #1e293b;
+  transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+}
+.input-soft::placeholder { color: #b6b6c8; }
+.input-soft:focus {
+  outline: none;
+  background: #fff;
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 4px rgba(167, 139, 250, .2);
+}
+
+/* ----- Píldora de icono con gradiente ----- */
+.icon-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  color: #fff;
+}
+
+/* ----- Elevación al pasar el cursor ----- */
+.lift { transition: transform .22s ease, box-shadow .22s ease; }
+.lift:hover { transform: translateY(-4px); box-shadow: 0 22px 44px -18px rgba(2, 6, 23, .26); }
+
+/* ----- Anillo de avatar (estilo "story") ----- */
+.avatar-ring {
+  background-image: var(--grad-brand);
+  padding: 2px;
+  border-radius: 9999px;
+}
+
+/* ============================================================
+   Animaciones
+   ============================================================ */
+@keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(28px, -34px) scale(1.12); }
+  66% { transform: translate(-22px, 18px) scale(.92); }
+}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes pan { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, .5); } 70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+
+.animate-floaty { animation: floaty 6s ease-in-out infinite; }
+.animate-blob { animation: blob 16s ease-in-out infinite; }
+.animate-fade-up { animation: fadeUp .5s ease both; }
+.animate-pan { background-size: 220% 220%; animation: pan 7s ease infinite; }
+.animate-pulse-ring { animation: pulseRing 2s ease-out infinite; }
+
+/* Retrasos escalonados para entradas */
+.delay-1 { animation-delay: .06s; }
+.delay-2 { animation-delay: .12s; }
+.delay-3 { animation-delay: .18s; }
+.delay-4 { animation-delay: .24s; }
+
+/* ============================================================
+   Scrollbar y selección
+   ============================================================ */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #d6d6e6;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: #bcbcd6; background-clip: padding-box; }
+
+::selection { background: rgba(124, 58, 237, .2); color: inherit; }

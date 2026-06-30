@@ -1,40 +1,106 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { Calculator, TrendingUp, FileSpreadsheet, AlertCircle, Download } from 'lucide-react';
 import Layout from './Layout';
 import {
   calcularCreditoVehicular,
   formatMoney,
   formatPercent,
-  SolicitudCreditoData,
+  ResultadoCredito,
 } from '../lib/financialCalculations';
+import { getLoans } from '../lib/api/loans';
+import { calculateAndPersistAmortization, loadPersistedAmortization } from '../lib/api/amortization';
+import { paths } from '../lib/routes';
+import type { Solicitud } from '../lib/types';
 
-type Page = 'dashboard' | 'registro' | 'credito' | 'amortizacion' | 'clientes' | 'solicitudes' | 'configuracion';
-
-interface TablaAmortizacionProps {
-  onBack: () => void;
-  userName: string;
-  currentPage: Page;
-  onNavigate: (page: Page) => void;
-  onLogout: () => void;
-}
-
-export default function TablaAmortizacion({ userName, currentPage, onNavigate, onLogout }: TablaAmortizacionProps) {
-  const [solicitudes, setSolicitudes] = useState<SolicitudCreditoData[]>([]);
+export default function TablaAmortizacion() {
+  const navigate = useNavigate();
+  const { id: routeId } = useParams<{ id?: string }>();
+  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [activeTab, setActiveTab] = useState<'cronograma' | 'indicadores'>('cronograma');
+  const [resultado, setResultado] = useState<ResultadoCredito | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [persisting, setPersisting] = useState(false);
+
+  const cargarSolicitudes = useCallback(async () => {
+    setLoading(true);
+    try {
+      const sols = await getLoans();
+      setSolicitudes(sols);
+      if (sols.length > 0) {
+        const pick = routeId && sols.some(s => s.id === routeId)
+          ? routeId
+          : sols[0].id;
+        setSelectedId(pick);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [routeId]);
+
+  useEffect(() => { cargarSolicitudes(); }, [cargarSolicitudes]);
+
+  const selectedSolicitud = useMemo(
+    () => solicitudes.find((s) => s.id === selectedId),
+    [solicitudes, selectedId]
+  );
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('solicitudes') || '[]');
-    setSolicitudes(saved);
-    if (saved.length > 0) setSelectedId(saved[saved.length - 1].id);
-  }, []);
+    if (!selectedSolicitud) {
+      setResultado(null);
+      return;
+    }
 
-  const selectedSolicitud = solicitudes.find((s) => s.id === selectedId);
+    let cancelled = false;
+    (async () => {
+      try {
+        const persisted = await loadPersistedAmortization(selectedSolicitud.id);
+        if (cancelled) return;
+        if (persisted) {
+          setResultado(persisted);
+        } else {
+          const calc = calcularCreditoVehicular({
+            id: selectedSolicitud.id,
+            cliente_id: selectedSolicitud.cliente_id,
+            marca_vehiculo: selectedSolicitud.marca_vehiculo,
+            modelo_vehiculo: selectedSolicitud.modelo_vehiculo,
+            precio_vehiculo: selectedSolicitud.precio_vehiculo,
+            cuota_inicial: selectedSolicitud.cuota_inicial,
+            tasa_descuento: selectedSolicitud.tasa_descuento || '0',
+            tasa_interes: selectedSolicitud.tasa_interes,
+            tipo_tasa: selectedSolicitud.tipo_tasa,
+            capitalizacion: selectedSolicitud.capitalizacion,
+            frecuencia_pago: selectedSolicitud.frecuencia_pago,
+            plazo_credito: selectedSolicitud.plazo_credito,
+            periodo_gracia: selectedSolicitud.periodo_gracia,
+            tipo_gracia: selectedSolicitud.tipo_gracia,
+            moneda: selectedSolicitud.moneda,
+            fecha_inicio: selectedSolicitud.fecha_inicio,
+            valor_residual: selectedSolicitud.valor_residual,
+          });
+          setResultado(calc);
+        }
+      } catch {
+        if (!cancelled) setResultado(null);
+      }
+    })();
 
-  const resultado = useMemo(() => {
-    if (!selectedSolicitud) return null;
-    return calcularCreditoVehicular(selectedSolicitud);
+    return () => { cancelled = true; };
   }, [selectedSolicitud]);
+
+  const handleCalcularYPersistir = async () => {
+    if (!selectedSolicitud) return;
+    setPersisting(true);
+    try {
+      const res = await calculateAndPersistAmortization(selectedSolicitud);
+      setResultado(res);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error al calcular');
+    } finally {
+      setPersisting(false);
+    }
+  };
 
   const currency = selectedSolicitud?.moneda || 'Soles';
 
@@ -57,13 +123,7 @@ export default function TablaAmortizacion({ userName, currentPage, onNavigate, o
   };
 
   return (
-    <Layout
-      currentPage={currentPage}
-      userName={userName}
-      onNavigate={onNavigate}
-      onLogout={onLogout}
-      pageTitle="Cálculos Financieros"
-    >
+    <Layout pageTitle="Cálculos Financieros">
       <div className="space-y-4">
         <div className="card-soft overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100 flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
@@ -77,27 +137,36 @@ export default function TablaAmortizacion({ userName, currentPage, onNavigate, o
               </p>
             </div>
 
-            <div className="w-full lg:w-96">
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Solicitud</label>
+            <div className="w-full lg:w-96 flex gap-2">
               <select
                 value={selectedId}
                 onChange={(e) => setSelectedId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-2xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm"
+                className="flex-1 px-3 py-2 border border-slate-200 rounded-2xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm"
               >
                 {solicitudes.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.id} — {s.marca_vehiculo} {s.modelo_vehiculo} · {s.moneda}
+                    {s.id} — {s.marca_vehiculo} {s.modelo_vehiculo}
                   </option>
                 ))}
               </select>
+              <button
+                type="button"
+                onClick={handleCalcularYPersistir}
+                disabled={!selectedSolicitud || persisting}
+                className="px-3 py-2 text-xs font-semibold border border-violet-200 rounded-2xl text-violet-700 hover:bg-violet-50 disabled:opacity-50"
+              >
+                {persisting ? '…' : 'Guardar'}
+              </button>
             </div>
           </div>
 
-          {solicitudes.length === 0 && (
+          {loading ? (
+            <div className="py-16 text-center text-slate-500 text-sm">Cargando solicitudes…</div>
+          ) : solicitudes.length === 0 && (
             <div className="py-16 text-center">
               <AlertCircle className="w-12 h-12 text-slate-200 mx-auto mb-3" />
               <p className="text-slate-500 text-sm">No hay solicitudes registradas para calcular.</p>
-              <button onClick={() => onNavigate('credito')} className="mt-3 text-violet-600 hover:underline font-semibold text-sm">
+              <button type="button" onClick={() => navigate(paths.solicitudNueva)} className="mt-3 text-violet-600 hover:underline font-semibold text-sm">
                 Crear solicitud de crédito
               </button>
             </div>
@@ -107,7 +176,7 @@ export default function TablaAmortizacion({ userName, currentPage, onNavigate, o
         {selectedSolicitud && resultado && (
           <>
             {/* KPI summary cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               {[
                 ['Monto financiado', formatMoney(resultado.indicadores.monto_prestamo, currency), 'text-teal-700', 'bg-teal-50 border-teal-200'],
                 ['Cuota francesa', formatMoney(resultado.indicadores.cuota_francesa, currency), 'text-emerald-700', 'bg-emerald-50 border-emerald-200'],
@@ -123,11 +192,11 @@ export default function TablaAmortizacion({ userName, currentPage, onNavigate, o
             </div>
 
             <div className="card-soft overflow-hidden">
-              <div className="flex items-center justify-between border-b border-slate-200 px-2">
-                <div className="flex">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-200 px-2">
+                <div className="flex overflow-x-auto">
                   <button
                     onClick={() => setActiveTab('cronograma')}
-                    className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px
+                    className={`flex items-center gap-2 px-4 sm:px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap shrink-0
                       ${activeTab === 'cronograma' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                   >
                     <FileSpreadsheet className="w-4 h-4" />
@@ -136,7 +205,7 @@ export default function TablaAmortizacion({ userName, currentPage, onNavigate, o
                   </button>
                   <button
                     onClick={() => setActiveTab('indicadores')}
-                    className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px
+                    className={`flex items-center gap-2 px-4 sm:px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap shrink-0
                       ${activeTab === 'indicadores' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                   >
                     <TrendingUp className="w-4 h-4" />
@@ -146,7 +215,7 @@ export default function TablaAmortizacion({ userName, currentPage, onNavigate, o
                 {activeTab === 'cronograma' && (
                   <button
                     onClick={exportarCSV}
-                    className="mr-3 flex items-center gap-1.5 text-xs text-slate-500 hover:text-teal-600 transition px-3 py-2 border border-slate-200 rounded-2xl hover:border-violet-300 bg-white hover:bg-violet-50 hover:text-violet-600"
+                    className="mx-2 mb-2 sm:mb-0 sm:mr-3 flex items-center justify-center gap-1.5 text-xs text-slate-500 hover:text-teal-600 transition px-3 py-2.5 border border-slate-200 rounded-2xl hover:border-violet-300 bg-white hover:bg-violet-50 hover:text-violet-600 shrink-0"
                   >
                     <Download className="w-3.5 h-3.5" />
                     Exportar CSV
@@ -155,8 +224,8 @@ export default function TablaAmortizacion({ userName, currentPage, onNavigate, o
               </div>
 
               {activeTab === 'cronograma' && (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <table className="w-full min-w-[960px] text-sm">
                     <thead className="bg-slate-50 border-b border-slate-200">
                       <tr>
                         {[

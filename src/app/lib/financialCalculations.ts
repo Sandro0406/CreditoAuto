@@ -82,14 +82,9 @@ export function toNumber(value: string | number | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
+import { roundMoney } from './money';
 
-export function formatMoney(value: number, currency: string): string {
-  const symbol = currency === 'Soles' ? 'S/' : '$';
-  return `${symbol} ${round2(value).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
+export { roundMoney, round2, formatMoney, formatMoneyStorage, MONEY_SCALE } from './money';
 
 export function formatPercent(value: number, decimals = 4): string {
   return `${(value * 100).toFixed(decimals)}%`;
@@ -99,7 +94,7 @@ export function formatPercent(value: number, decimals = 4): string {
 // El valor residual (cuota balón) NO se descuenta aquí; se trata como
 // pago diferido al final del plazo (método Compra Inteligente).
 export function calcularMontoPrestamo(precioVehiculo: number, cuotaInicial: number): number {
-  return Math.max(precioVehiculo - cuotaInicial, 0);
+  return roundMoney(Math.max(precioVehiculo - cuotaInicial, 0));
 }
 
 export function convertirATasaEfectivaAnual(
@@ -124,10 +119,10 @@ export function convertirTasaEfectivaPeriodo(tea: number, diasPeriodo: number): 
 
 function calcularCuotaFrancesa(saldo: number, tasaPeriodo: number, periodos: number): number {
   if (periodos <= 0) return 0;
-  if (tasaPeriodo === 0) return saldo / periodos;
+  if (tasaPeriodo === 0) return roundMoney(saldo / periodos);
 
   const factor = (tasaPeriodo * Math.pow(1 + tasaPeriodo, periodos)) / (Math.pow(1 + tasaPeriodo, periodos) - 1);
-  return saldo * factor;
+  return roundMoney(saldo * factor);
 }
 
 function addDays(dateText: string, days: number): string {
@@ -207,8 +202,8 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
   let totalPagado = 0;
 
   for (let periodo = 1; periodo <= numeroPeriodos; periodo += 1) {
-    const saldoInicial = saldo;
-    const interes = saldoInicial * tasaPeriodica;
+    const saldoInicial = roundMoney(saldo);
+    let interes = roundMoney(saldoInicial * tasaPeriodica);
     let amortizacion = 0;
     let cuota = 0;
     let valorResidualPagado = 0;
@@ -220,7 +215,7 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
       tipoPeriodo = 'Gracia Total';
       cuota = 0;
       amortizacion = 0;
-      saldo = saldoInicial + interes;
+      saldo = roundMoney(saldoInicial + interes);
     } else if (estaEnGracia && tipoGracia === 'Parcial') {
       tipoPeriodo = 'Gracia Parcial';
       cuota = interes;
@@ -228,9 +223,6 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
       saldo = saldoInicial;
     } else {
       if (cuotaFrancesa === 0) {
-        // Compra Inteligente: descontar el VA del valor residual (cuota balón)
-        // para obtener la base sobre la que se calcula la cuota francesa.
-        // periodos_restantes incluye el período actual.
         const periodosRestantes = numeroPeriodos - periodo + 1;
         const vrPV = valorResidual > 0
           ? valorResidual / Math.pow(1 + tasaPeriodica, periodosRestantes)
@@ -240,61 +232,61 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
       }
 
       cuota = cuotaFrancesa;
-      amortizacion = cuota - interes;
-      saldo = Math.max(saldoInicial - amortizacion, 0);
+      amortizacion = roundMoney(cuota - interes);
+      saldo = roundMoney(Math.max(saldoInicial - amortizacion, 0));
 
-      // Último período: se cobra la cuota balón (valor residual).
-      // El saldo queda en 0 tras su pago.
       if (periodo === numeroPeriodos && valorResidual > 0) {
-        valorResidualPagado = valorResidual;
-        cuota += valorResidual;
-        amortizacion += valorResidual;
+        valorResidualPagado = roundMoney(valorResidual);
+        cuota = roundMoney(cuota + valorResidual);
+        amortizacion = roundMoney(amortizacion + valorResidual);
         saldo = 0;
       }
     }
 
-    const flujoDeudor = -cuota;
-    const valorActual = flujoDeudor / Math.pow(1 + tasaDescuentoPeriodica, periodo);
+    const flujoDeudor = roundMoney(-cuota);
+    const valorActual = roundMoney(flujoDeudor / Math.pow(1 + tasaDescuentoPeriodica, periodo));
 
     flujos.push(flujoDeudor);
-    totalIntereses += interes;
-    totalPagado += cuota;
+    totalIntereses = roundMoney(totalIntereses + interes);
+    totalPagado = roundMoney(totalPagado + cuota);
 
     cronograma.push({
       numero_cuota: periodo,
       fecha_pago: addDays(solicitud.fecha_inicio, periodo * diasPeriodo),
       tipo_periodo: tipoPeriodo,
-      saldo_inicial: round2(saldoInicial),
-      interes: round2(interes),
-      amortizacion: round2(amortizacion),
-      cuota: round2(cuota),
-      valor_residual_pagado: round2(valorResidualPagado),
-      saldo_final: round2(saldo),
-      flujo_deudor: round2(flujoDeudor),
-      valor_actual: round2(valorActual),
+      saldo_inicial: saldoInicial,
+      interes,
+      amortizacion,
+      cuota,
+      valor_residual_pagado: valorResidualPagado,
+      saldo_final: saldo,
+      flujo_deudor: flujoDeudor,
+      valor_actual: valorActual,
     });
   }
 
-  const van = flujos.reduce((acc, flujo, index) => acc + flujo / Math.pow(1 + tasaDescuentoPeriodica, index), 0);
+  const van = roundMoney(
+    flujos.reduce((acc, flujo, index) => acc + flujo / Math.pow(1 + tasaDescuentoPeriodica, index), 0)
+  );
   const tirPeriodica = calculateIrr(flujos);
   const tirAnual = Math.pow(1 + tirPeriodica, DAYS_PER_YEAR / diasPeriodo) - 1;
 
   return {
     cronograma,
     indicadores: {
-      monto_prestamo: round2(montoPrestamo),
+      monto_prestamo: montoPrestamo,
       tea,
       tasa_periodica: tasaPeriodica,
       tasa_descuento_periodica: tasaDescuentoPeriodica,
       numero_periodos: numeroPeriodos,
-      total_intereses: round2(totalIntereses),
-      total_pagado: round2(totalPagado),
-      van: round2(van),
+      total_intereses: totalIntereses,
+      total_pagado: totalPagado,
+      van,
       tir_periodica: tirPeriodica,
       tir_anual: tirAnual,
       tcea: tirAnual,
-      cuota_francesa: round2(cuotaFrancesa),
-      valor_residual: round2(valorResidual),
+      cuota_francesa: cuotaFrancesa,
+      valor_residual: roundMoney(valorResidual),
       flujos,
     },
   };

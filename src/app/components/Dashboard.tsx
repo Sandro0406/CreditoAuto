@@ -1,57 +1,54 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import {
   Users, CreditCard, Car, FileText, PlusCircle,
   BarChart3, Settings, Clock, ArrowUpRight, Sparkles, ArrowRight,
 } from 'lucide-react';
 import Layout from './Layout';
+import { getClients } from '../lib/api/clients';
+import { getLoans } from '../lib/api/loans';
+import { useAuth } from '../context/AuthContext';
+import { paths } from '../lib/routes';
 
-type Page = 'dashboard' | 'registro' | 'credito' | 'amortizacion' | 'clientes' | 'solicitudes' | 'configuracion';
-
-interface DashboardProps {
-  userName: string;
-  currentPage: Page;
-  onNavigate: (page: Page) => void;
-  onLogout: () => void;
-  onBack?: () => void;
-}
-
-export default function Dashboard({ userName, currentPage, onNavigate, onLogout }: DashboardProps) {
+export default function Dashboard() {
+  const { userName } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({ clientes: 0, activos: 0, pendientes: 0, total: 0 });
   const [actividad, setActividad] = useState<any[]>([]);
 
   useEffect(() => {
-    const clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
-    const solicitudes = JSON.parse(localStorage.getItem('solicitudes') || '[]');
-    setStats({
-      clientes: clientes.length,
-      activos: solicitudes.filter((s: any) => s.estado === 'Aprobado').length,
-      pendientes: solicitudes.filter((s: any) => s.estado === 'Pendiente').length,
-      total: solicitudes.length,
-    });
-    const acts: any[] = [];
-    clientes.slice(-3).forEach((c: any) => acts.push({ label: c.nombre_cliente, sub: 'Cliente registrado', monto: null, fecha: c.fecha_registro, tipo: 'cliente' }));
-    solicitudes.slice(-3).forEach((s: any) => acts.push({
-      label: `${s.marca_vehiculo} ${s.modelo_vehiculo}`,
-      sub: `Solicitud ${(s.estado || '').toLowerCase()}`,
-      monto: `${s.moneda === 'Soles' ? 'S/' : '$'} ${parseFloat(s.monto_prestamo || '0').toLocaleString('es-PE')}`,
-      fecha: s.fecha_solicitud,
-      tipo: 'solicitud',
-    }));
-    setActividad(acts.slice(-5));
+    Promise.all([getClients(), getLoans()]).then(([clientes, solicitudes]) => {
+      setStats({
+        clientes: clientes.length,
+        activos: solicitudes.filter((s) => s.estado === 'Aprobado').length,
+        pendientes: solicitudes.filter((s) => s.estado === 'Pendiente').length,
+        total: solicitudes.length,
+      });
+      const acts: any[] = [];
+      clientes.slice(-3).forEach((c) => acts.push({ label: c.nombre_cliente, sub: 'Cliente registrado', monto: null, fecha: c.fecha_registro, tipo: 'cliente' }));
+      solicitudes.slice(-3).forEach((s) => acts.push({
+        label: `${s.marca_vehiculo} ${s.modelo_vehiculo}`,
+        sub: `Solicitud ${(s.estado || '').toLowerCase()}`,
+        monto: `${s.moneda === 'Soles' ? 'S/' : '$'} ${parseFloat(s.monto_prestamo || '0').toLocaleString('es-PE')}`,
+        fecha: s.fecha_solicitud,
+        tipo: 'solicitud',
+      }));
+      setActividad(acts.slice(-5));
+    }).catch(console.error);
   }, []);
 
   const statCards = [
-    { label: 'Clientes registrados', value: stats.clientes, icon: Users, grad: 'bg-grad-brand', shadow: 'shadow-brand', page: 'clientes' as Page },
-    { label: 'Créditos aprobados', value: stats.activos, icon: CreditCard, grad: 'bg-grad-money', shadow: 'shadow-money', page: 'solicitudes' as Page },
-    { label: 'Total solicitudes', value: stats.total, icon: Car, grad: 'bg-grad-sky', shadow: '', page: 'solicitudes' as Page },
-    { label: 'Pendientes de revisión', value: stats.pendientes, icon: FileText, grad: 'bg-grad-warm', shadow: '', page: 'solicitudes' as Page },
+    { label: 'Clientes registrados', value: stats.clientes, icon: Users, grad: 'bg-grad-brand', shadow: 'shadow-brand', path: paths.clientes },
+    { label: 'Créditos aprobados', value: stats.activos, icon: CreditCard, grad: 'bg-grad-money', shadow: 'shadow-money', path: paths.solicitudes },
+    { label: 'Total solicitudes', value: stats.total, icon: Car, grad: 'bg-grad-sky', shadow: '', path: paths.solicitudes },
+    { label: 'Pendientes de revisión', value: stats.pendientes, icon: FileText, grad: 'bg-grad-warm', shadow: '', path: paths.solicitudes },
   ];
 
   const quickCards = [
-    { title: 'Nuevo cliente', desc: 'Registrar información del cliente', icon: PlusCircle, page: 'registro' as Page, grad: 'bg-grad-brand' },
-    { title: 'Nueva solicitud', desc: 'Crédito vehicular Compra Inteligente', icon: CreditCard, page: 'credito' as Page, grad: 'bg-grad-money' },
-    { title: 'Amortización', desc: 'Cronograma, VAN, TIR y TCEA', icon: BarChart3, page: 'amortizacion' as Page, grad: 'bg-grad-sky' },
-    { title: 'Configuración', desc: 'Moneda, tasa y parámetros', icon: Settings, page: 'configuracion' as Page, grad: 'bg-grad-warm' },
+    { title: 'Nuevo cliente', desc: 'Registrar información del cliente', icon: PlusCircle, path: paths.clienteNuevo, grad: 'bg-grad-brand' },
+    { title: 'Nueva solicitud', desc: 'Crédito vehicular Compra Inteligente', icon: CreditCard, path: paths.solicitudNueva, grad: 'bg-grad-money' },
+    { title: 'Amortización', desc: 'Cronograma, VAN, TIR y TCEA', icon: BarChart3, path: paths.amortizacion, grad: 'bg-grad-sky' },
+    { title: 'Configuración', desc: 'Moneda, tasa y parámetros', icon: Settings, path: paths.configuracion, grad: 'bg-grad-warm' },
   ];
 
   const estadoColor: Record<string, string> = {
@@ -61,7 +58,7 @@ export default function Dashboard({ userName, currentPage, onNavigate, onLogout 
   };
 
   return (
-    <Layout currentPage={currentPage} userName={userName} onNavigate={onNavigate} onLogout={onLogout} pageTitle="Inicio" pageSubtitle="Bandeja principal">
+    <Layout pageTitle="Inicio" pageSubtitle="Bandeja principal">
       {/* Hero banner */}
       <div className="bg-grad-brand animate-pan rounded-[28px] p-6 sm:p-7 relative overflow-hidden mb-5 shadow-brand">
         <div className="absolute -right-10 -top-10 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
@@ -76,7 +73,7 @@ export default function Dashboard({ userName, currentPage, onNavigate, onLogout 
             <p className="text-white/80 text-sm mt-1 max-w-md">Gestiona clientes, simula créditos y revisa los indicadores de transparencia desde un solo lugar.</p>
           </div>
           <button
-            onClick={() => onNavigate('credito')}
+            onClick={() => navigate(paths.solicitudNueva)}
             className="bg-white text-violet-700 font-bold text-sm px-5 py-3 rounded-2xl flex items-center gap-2 hover:gap-3 transition-all shadow-lg shrink-0 self-start"
           >
             Nueva solicitud
@@ -86,21 +83,21 @@ export default function Dashboard({ userName, currentPage, onNavigate, onLogout 
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
         {statCards.map((card, i) => (
           <button
             key={card.label}
-            onClick={() => onNavigate(card.page)}
-            className={`card-soft lift p-5 text-left group animate-fade-up delay-${i + 1}`}
+            onClick={() => navigate(card.path)}
+            className={`card-soft lift p-4 sm:p-5 text-left group animate-fade-up delay-${i + 1}`}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`w-12 h-12 ${card.grad} icon-tile ${card.shadow}`}>
-                <card.icon className="w-6 h-6 text-white" strokeWidth={2.2} />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 ${card.grad} icon-tile ${card.shadow}`}>
+                <card.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" strokeWidth={2.2} />
               </div>
               <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-violet-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
             </div>
-            <p className="text-[32px] font-extrabold text-slate-900 leading-none tracking-tight">{card.value}</p>
-            <p className="text-xs text-slate-500 mt-2 font-medium">{card.label}</p>
+            <p className="text-2xl sm:text-[32px] font-extrabold text-slate-900 leading-none tracking-tight">{card.value}</p>
+            <p className="text-xs text-slate-500 mt-1.5 sm:mt-2 font-medium leading-snug">{card.label}</p>
           </button>
         ))}
       </div>
@@ -116,7 +113,7 @@ export default function Dashboard({ userName, currentPage, onNavigate, onLogout 
             {quickCards.map((card) => (
               <button
                 key={card.title}
-                onClick={() => onNavigate(card.page)}
+                onClick={() => navigate(card.path)}
                 className="w-full flex items-center gap-4 px-3 py-3 rounded-2xl text-left hover:bg-slate-50 transition-colors group"
               >
                 <div className={`w-11 h-11 ${card.grad} icon-tile shrink-0 group-hover:scale-105 transition-transform`}>
@@ -178,7 +175,7 @@ export default function Dashboard({ userName, currentPage, onNavigate, onLogout 
           )}
           {actividad.length > 0 && (
             <div className="px-5 py-3 border-t border-slate-100">
-              <button onClick={() => onNavigate('solicitudes')} className="text-xs text-violet-600 hover:text-violet-700 font-semibold flex items-center gap-1 group">
+              <button onClick={() => navigate(paths.solicitudes)} className="text-xs text-violet-600 hover:text-violet-700 font-semibold flex items-center gap-1 group">
                 Ver todas las solicitudes
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </button>

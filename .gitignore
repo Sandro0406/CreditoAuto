@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+.env.local
+password_db.txt
+.DS_Store
+.claude/

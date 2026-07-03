@@ -119,6 +119,24 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ============================================================
+   Escala de marca · verde apagado "automotriz" (calm / sage-pine)
+   Un solo acento sobrio. Genera utilidades bg-brand-*, text-brand-*,
+   border-brand-*, ring-brand-*.
+   ============================================================ */
+@theme {
+  --color-brand-50: #f2f6f4;
+  --color-brand-100: #e0ebe5;
+  --color-brand-200: #c3d8cd;
+  --color-brand-300: #9dbdae;
+  --color-brand-400: #6f9c88;
+  --color-brand-500: #4d7d68;
+  --color-brand-600: #3a6653;
+  --color-brand-700: #305344;
+  --color-brand-800: #294539;
+  --color-brand-900: #1f372e;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

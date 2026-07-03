@@ -2,6 +2,7 @@
 import { useNavigate, useParams } from 'react-router';
 import { Calculator, TrendingUp, FileSpreadsheet, AlertCircle, Download } from 'lucide-react';
 import Layout from './Layout';
+import InfoHint from './InfoHint';
 import {
   calcularCreditoVehicular,
   formatMoney,
@@ -129,7 +130,7 @@ export default function TablaAmortizacion() {
           <div className="px-5 py-4 border-b border-slate-100 flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <Calculator className="w-5 h-5 text-teal-500" />
+                <Calculator className="w-5 h-5 text-brand-700" />
                 <p className="font-semibold text-slate-800">Cronograma e Indicadores de Transparencia</p>
               </div>
               <p className="text-xs text-slate-400 mt-1">
@@ -141,7 +142,7 @@ export default function TablaAmortizacion() {
               <select
                 value={selectedId}
                 onChange={(e) => setSelectedId(e.target.value)}
-                className="flex-1 px-3 py-2 border border-slate-200 rounded-2xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm"
+                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm"
               >
                 {solicitudes.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -153,7 +154,7 @@ export default function TablaAmortizacion() {
                 type="button"
                 onClick={handleCalcularYPersistir}
                 disabled={!selectedSolicitud || persisting}
-                className="px-3 py-2 text-xs font-semibold border border-violet-200 rounded-2xl text-violet-700 hover:bg-violet-50 disabled:opacity-50"
+                className="px-3 py-2 text-xs font-semibold border border-brand-200 rounded-lg text-brand-700 hover:bg-brand-50 disabled:opacity-50"
               >
                 {persisting ? '…' : 'Guardar'}
               </button>
@@ -166,7 +167,7 @@ export default function TablaAmortizacion() {
             <div className="py-16 text-center">
               <AlertCircle className="w-12 h-12 text-slate-200 mx-auto mb-3" />
               <p className="text-slate-500 text-sm">No hay solicitudes registradas para calcular.</p>
-              <button type="button" onClick={() => navigate(paths.solicitudNueva)} className="mt-3 text-violet-600 hover:underline font-semibold text-sm">
+              <button type="button" onClick={() => navigate(paths.solicitudNueva)} className="mt-3 text-brand-700 hover:underline font-semibold text-sm">
                 Crear solicitud de crédito
               </button>
             </div>
@@ -178,15 +179,18 @@ export default function TablaAmortizacion() {
             {/* KPI summary cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               {[
-                ['Monto financiado', formatMoney(resultado.indicadores.monto_prestamo, currency), 'text-teal-700', 'bg-teal-50 border-teal-200'],
-                ['Cuota francesa', formatMoney(resultado.indicadores.cuota_francesa, currency), 'text-emerald-700', 'bg-emerald-50 border-emerald-200'],
-                ['Valor residual', formatMoney(resultado.indicadores.valor_residual, currency), 'text-violet-700', 'bg-violet-50 border-violet-200'],
-                ['VAN deudor', formatMoney(resultado.indicadores.van, currency), resultado.indicadores.van >= 0 ? 'text-indigo-700' : 'text-rose-700', 'bg-indigo-50 border-indigo-200'],
-                ['TCEA', formatPercent(resultado.indicadores.tcea), 'text-amber-700', 'bg-amber-50 border-amber-200'],
-              ].map(([label, value, textColor, bgBorder]) => (
-                <div key={label} className={`border rounded-2xl shadow-sm p-4 lift ${bgBorder}`}>
-                  <p className="text-xs text-slate-500 uppercase tracking-wide">{label}</p>
-                  <p className={`text-xl font-bold mt-1 ${textColor}`}>{value}</p>
+                ['Monto financiado', formatMoney(resultado.indicadores.monto_prestamo, currency), 'text-slate-900', 'Monto del préstamo que se financia: precio del vehículo menos la cuota inicial.'],
+                ['Cuota francesa', formatMoney(resultado.indicadores.cuota_francesa, currency), 'text-brand-700', 'Cuota fija mensual del método francés. Cada cuota incluye intereses más amortización del capital.'],
+                ['Valor residual', formatMoney(resultado.indicadores.valor_residual, currency), 'text-slate-900', 'Cuota balón que se paga al final del crédito en la modalidad Compra Inteligente.'],
+                ['VAN deudor', formatMoney(resultado.indicadores.van, currency), resultado.indicadores.van >= 0 ? 'text-slate-900' : 'text-red-700', 'Valor Actual Neto de los flujos desde la perspectiva del deudor, descontados a la tasa pactada. Negativo = costo financiero para el cliente.'],
+                ['TCEA', formatPercent(resultado.indicadores.tcea), 'text-slate-900', 'Tasa de Costo Efectivo Anual: costo total real del crédito en un año, incluyendo intereses y cargos.'],
+              ].map(([label, value, textColor, hint]) => (
+                <div key={label} className="border border-slate-200 bg-white rounded-xl shadow-card p-4 lift">
+                  <p className="text-xs text-slate-500 uppercase tracking-wide flex items-center gap-1">
+                    {label}
+                    <InfoHint text={hint} />
+                  </p>
+                  <p className={`text-xl font-bold mt-1 tabular ${textColor}`}>{value}</p>
                 </div>
               ))}
             </div>
@@ -197,16 +201,16 @@ export default function TablaAmortizacion() {
                   <button
                     onClick={() => setActiveTab('cronograma')}
                     className={`flex items-center gap-2 px-4 sm:px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap shrink-0
-                      ${activeTab === 'cronograma' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                      ${activeTab === 'cronograma' ? 'border-brand-600 text-brand-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                   >
                     <FileSpreadsheet className="w-4 h-4" />
                     Cronograma
-                    <span className="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{resultado.cronograma.length}</span>
+                    <span className="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full tabular">{resultado.cronograma.length}</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('indicadores')}
                     className={`flex items-center gap-2 px-4 sm:px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap shrink-0
-                      ${activeTab === 'indicadores' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                      ${activeTab === 'indicadores' ? 'border-brand-600 text-brand-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                   >
                     <TrendingUp className="w-4 h-4" />
                     Indicadores de Transparencia
@@ -215,7 +219,7 @@ export default function TablaAmortizacion() {
                 {activeTab === 'cronograma' && (
                   <button
                     onClick={exportarCSV}
-                    className="mx-2 mb-2 sm:mb-0 sm:mr-3 flex items-center justify-center gap-1.5 text-xs text-slate-500 hover:text-teal-600 transition px-3 py-2.5 border border-slate-200 rounded-2xl hover:border-violet-300 bg-white hover:bg-violet-50 hover:text-violet-600 shrink-0"
+                    className="mx-2 mb-2 sm:mb-0 sm:mr-3 flex items-center justify-center gap-1.5 text-xs text-slate-500 transition px-3 py-2.5 border border-slate-200 rounded-lg hover:border-brand-200 bg-white hover:bg-brand-50 hover:text-brand-700 shrink-0"
                   >
                     <Download className="w-3.5 h-3.5" />
                     Exportar CSV
@@ -234,31 +238,38 @@ export default function TablaAmortizacion() {
                           'Cuota', 'Val. Residual', 'Saldo Final',
                           'Flujo Deudor', 'Valor Actual',
                         ].map((h) => (
-                          <th key={h} className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                          <th key={h} className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
+                            <span className="inline-flex items-center gap-1">
+                              {h}
+                              {h === 'Tipo' && (
+                                <InfoHint text="Tipo de período: N = Normal (paga cuota completa) · GT = Gracia Total (no paga; el interés se capitaliza) · GP = Gracia Parcial (solo paga intereses)." />
+                              )}
+                            </span>
+                          </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {resultado.cronograma.map((row) => (
                         <tr key={row.numero_cuota} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-3 py-2.5 font-mono text-teal-600 text-xs">{row.numero_cuota}</td>
-                          <td className="px-3 py-2.5 text-slate-600 text-xs whitespace-nowrap">{row.fecha_pago}</td>
+                          <td className="px-3 py-2.5 font-mono text-brand-700 text-xs tabular">{row.numero_cuota}</td>
+                          <td className="px-3 py-2.5 text-slate-600 text-xs whitespace-nowrap tabular">{row.fecha_pago}</td>
                           <td className="px-3 py-2.5">
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              row.tipo_periodo === 'Normal' ? 'bg-green-100 text-green-700' :
-                              row.tipo_periodo === 'Gracia Total' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                              row.tipo_periodo === 'Normal' ? 'bg-brand-50 text-brand-700 border border-brand-200' :
+                              row.tipo_periodo === 'Gracia Total' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-600 border border-slate-200'
                             }`}>
                               {row.tipo_periodo === 'Normal' ? 'N' : row.tipo_periodo === 'Gracia Total' ? 'GT' : 'GP'}
                             </span>
                           </td>
-                          <td className="px-3 py-2.5 text-slate-700 text-xs">{formatMoney(row.saldo_inicial, currency)}</td>
-                          <td className="px-3 py-2.5 text-slate-700 text-xs">{formatMoney(row.interes, currency)}</td>
-                          <td className="px-3 py-2.5 text-slate-700 text-xs">{formatMoney(row.amortizacion, currency)}</td>
-                          <td className="px-3 py-2.5 font-semibold text-slate-800 text-xs">{formatMoney(row.cuota, currency)}</td>
-                          <td className="px-3 py-2.5 text-violet-600 text-xs">{row.valor_residual_pagado > 0 ? formatMoney(row.valor_residual_pagado, currency) : '—'}</td>
-                          <td className="px-3 py-2.5 text-slate-700 text-xs">{formatMoney(row.saldo_final, currency)}</td>
-                          <td className="px-3 py-2.5 text-rose-600 text-xs">{formatMoney(row.flujo_deudor, currency)}</td>
-                          <td className="px-3 py-2.5 text-indigo-600 text-xs">{formatMoney(row.valor_actual, currency)}</td>
+                          <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{formatMoney(row.saldo_inicial, currency)}</td>
+                          <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{formatMoney(row.interes, currency)}</td>
+                          <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{formatMoney(row.amortizacion, currency)}</td>
+                          <td className="px-3 py-2.5 font-semibold text-slate-800 text-xs tabular">{formatMoney(row.cuota, currency)}</td>
+                          <td className="px-3 py-2.5 text-brand-700 text-xs tabular">{row.valor_residual_pagado > 0 ? formatMoney(row.valor_residual_pagado, currency) : '—'}</td>
+                          <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{formatMoney(row.saldo_final, currency)}</td>
+                          <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{formatMoney(row.flujo_deudor, currency)}</td>
+                          <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{formatMoney(row.valor_actual, currency)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -266,10 +277,10 @@ export default function TablaAmortizacion() {
                       <tr>
                         <td colSpan={3} className="px-3 py-2.5 text-xs font-bold text-slate-700">TOTALES</td>
                         <td className="px-3 py-2.5 text-xs font-semibold text-slate-600">—</td>
-                        <td className="px-3 py-2.5 text-xs font-semibold text-slate-800">{formatMoney(resultado.indicadores.total_intereses, currency)}</td>
+                        <td className="px-3 py-2.5 text-xs font-semibold text-slate-800 tabular">{formatMoney(resultado.indicadores.total_intereses, currency)}</td>
                         <td className="px-3 py-2.5 text-xs font-semibold text-slate-600">—</td>
-                        <td className="px-3 py-2.5 text-xs font-bold text-slate-900">{formatMoney(resultado.indicadores.total_pagado, currency)}</td>
-                        <td className="px-3 py-2.5 text-xs font-semibold text-violet-700">{resultado.indicadores.valor_residual > 0 ? formatMoney(resultado.indicadores.valor_residual, currency) : '—'}</td>
+                        <td className="px-3 py-2.5 text-xs font-bold text-slate-900 tabular">{formatMoney(resultado.indicadores.total_pagado, currency)}</td>
+                        <td className="px-3 py-2.5 text-xs font-semibold text-brand-700 tabular">{resultado.indicadores.valor_residual > 0 ? formatMoney(resultado.indicadores.valor_residual, currency) : '—'}</td>
                         <td colSpan={3} />
                       </tr>
                     </tfoot>
@@ -293,7 +304,7 @@ export default function TablaAmortizacion() {
                       ].map(([label, value]) => (
                         <div key={label} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
                           <p className="text-xs text-slate-400 uppercase tracking-wide">{label}</p>
-                          <p className="text-base font-semibold text-slate-800 mt-0.5">{value}</p>
+                          <p className="text-base font-semibold text-slate-800 mt-0.5 tabular">{value}</p>
                         </div>
                       ))}
                     </div>
@@ -313,7 +324,7 @@ export default function TablaAmortizacion() {
                       ].map(([label, value]) => (
                         <div key={label} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
                           <p className="text-xs text-slate-400 uppercase tracking-wide">{label}</p>
-                          <p className="text-base font-semibold text-slate-800 mt-0.5">{value}</p>
+                          <p className="text-base font-semibold text-slate-800 mt-0.5 tabular">{value}</p>
                         </div>
                       ))}
                     </div>
@@ -323,9 +334,9 @@ export default function TablaAmortizacion() {
                   <div>
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Valor Actual Neto (VAN)</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className={`border rounded-lg p-4 ${resultado.indicadores.van >= 0 ? 'bg-green-50 border-green-200' : 'bg-rose-50 border-rose-200'}`}>
+                      <div className={`border rounded-lg p-4 ${resultado.indicadores.van >= 0 ? 'bg-brand-50 border-brand-200' : 'bg-red-50 border-red-200'}`}>
                         <p className="text-xs text-slate-500 uppercase tracking-wide">VAN del Deudor</p>
-                        <p className={`text-2xl font-bold mt-1 ${resultado.indicadores.van >= 0 ? 'text-green-700' : 'text-rose-700'}`}>
+                        <p className={`text-2xl font-bold mt-1 tabular ${resultado.indicadores.van >= 0 ? 'text-brand-700' : 'text-red-700'}`}>
                           {formatMoney(resultado.indicadores.van, currency)}
                         </p>
                         <p className="text-xs text-slate-500 mt-1">
@@ -334,9 +345,9 @@ export default function TablaAmortizacion() {
                             : 'El costo del crédito supera la tasa de descuento del deudor.'}
                         </p>
                       </div>
-                      <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+                      <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
                         <p className="text-xs text-slate-400 uppercase tracking-wide">TCEA / TIR Anual Deudor</p>
-                        <p className="text-2xl font-bold text-amber-700 mt-1">{formatPercent(resultado.indicadores.tcea)}</p>
+                        <p className="text-2xl font-bold text-slate-900 mt-1 tabular">{formatPercent(resultado.indicadores.tcea)}</p>
                         <p className="text-xs text-slate-500 mt-1">
                           Costo efectivo anual del crédito desde la perspectiva del deudor. Equivale a la TEA cuando no hay costos adicionales.
                         </p>
@@ -345,9 +356,9 @@ export default function TablaAmortizacion() {
                   </div>
 
                   {/* Norma transparencia SBS */}
-                  <div className="border border-indigo-100 bg-indigo-50 rounded-lg p-4">
-                    <p className="text-sm font-semibold text-indigo-700 mb-2">Indicadores — Norma de Transparencia SBS (Res. 8181-2012)</p>
-                    <ul className="text-xs text-indigo-700 space-y-1 list-disc list-inside">
+                  <div className="border border-brand-200 bg-brand-50 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-brand-700 mb-2">Indicadores — Norma de Transparencia SBS (Res. 8181-2012)</p>
+                    <ul className="text-xs text-brand-900 space-y-1 list-disc list-inside">
                       <li>Monto del crédito: {formatMoney(resultado.indicadores.monto_prestamo, currency)}</li>
                       <li>TEA aplicada: {formatPercent(resultado.indicadores.tea)}</li>
                       <li>TCEA (costo total efectivo anual): {formatPercent(resultado.indicadores.tcea)}</li>

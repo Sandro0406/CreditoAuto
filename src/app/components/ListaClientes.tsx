@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router';
 import { Search, Edit, Trash2, Plus, Users, Save, X } from 'lucide-react';
 import Layout from './Layout';
@@ -15,6 +16,7 @@ export default function ListaClientes() {
   const [busqueda, setBusqueda] = useState('');
   const [editando, setEditando] = useState<Cliente | null>(null);
   const [editForm, setEditForm] = useState<Cliente | null>(null);
+  const [cerrando, setCerrando] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -48,8 +50,12 @@ export default function ListaClientes() {
   };
 
   const cerrarEdicion = () => {
-    setEditando(null);
-    setEditForm(null);
+    setCerrando(true);
+    setTimeout(() => {
+      setEditando(null);
+      setEditForm(null);
+      setCerrando(false);
+    }, 170);
   };
 
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -80,7 +86,7 @@ export default function ListaClientes() {
       <div className="card-soft overflow-hidden">
         <div className="px-5 py-3 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <div className="flex items-center gap-2 flex-1">
-            <Users className="w-5 h-5 text-teal-500" />
+            <Users className="w-5 h-5 text-brand-700" />
             <p className="font-semibold text-slate-800">Lista de Clientes</p>
             <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{clientes.length}</span>
           </div>
@@ -89,23 +95,23 @@ export default function ListaClientes() {
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input type="text" value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
                 placeholder="Buscar por nombre, DNI o teléfono…"
-                className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-2xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-400" />
+                className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-400" />
             </div>
             <button type="button" onClick={() => navigate(paths.clienteNuevo)}
-              className="btn-grad text-white px-4 py-2.5 rounded-2xl text-sm transition flex items-center gap-1.5 shrink-0">
+              className="btn-grad text-white px-4 py-2.5 rounded-lg text-sm transition flex items-center gap-1.5 shrink-0">
               <Plus className="w-4 h-4" /> Nuevo
             </button>
           </div>
         </div>
 
-        {error && <p className="px-5 py-3 text-rose-600 text-sm">{error}</p>}
+        {error && <p className="px-5 py-3 text-red-600 text-sm">{error}</p>}
         {loading ? (
           <div className="py-16 text-center text-slate-500 text-sm">Cargando clientes…</div>
         ) : filtrados.length === 0 ? (
           <div className="py-16 text-center">
             <Users className="w-12 h-12 text-slate-200 mx-auto mb-3" />
             <p className="text-slate-500 text-sm">{busqueda ? 'No se encontraron clientes' : 'No hay clientes registrados'}</p>
-            <button type="button" onClick={() => navigate(paths.clienteNuevo)} className="mt-3 text-violet-600 hover:underline font-semibold text-sm">
+            <button type="button" onClick={() => navigate(paths.clienteNuevo)} className="mt-3 text-brand-700 hover:underline font-semibold text-sm">
               Registrar primer cliente
             </button>
           </div>
@@ -124,13 +130,13 @@ export default function ListaClientes() {
                   <tr key={cliente.id_cliente} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 font-mono text-slate-600">{cliente.id_cliente}</td>
                     <td className="px-4 py-3 font-medium text-slate-800">{cliente.nombre_cliente}</td>
-                    <td className="px-4 py-3 text-slate-600">{cliente.dni_cliente}</td>
-                    <td className="px-4 py-3 text-slate-600">{cliente.telefono_cliente}</td>
+                    <td className="px-4 py-3 text-slate-600 tabular">{cliente.dni_cliente}</td>
+                    <td className="px-4 py-3 text-slate-600 tabular">{cliente.telefono_cliente}</td>
                     <td className="px-4 py-3 text-slate-500 max-w-[180px] truncate">{cliente.direccion_cliente || '—'}</td>
                     <td className="px-4 py-3 text-slate-500">{cliente.fecha_registro}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => abrirEdicion(cliente)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition" title="Editar">
+                        <button onClick={() => abrirEdicion(cliente)} className="p-2 text-brand-700 hover:bg-brand-50 rounded-lg transition" title="Editar">
                           <Edit className="w-4 h-4" />
                         </button>
                         <button onClick={() => eliminarCliente(cliente.id_cliente)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition" title="Eliminar">
@@ -146,9 +152,9 @@ export default function ListaClientes() {
         )}
       </div>
 
-      {editando && editForm && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50" onClick={cerrarEdicion}>
-          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      {editando && editForm && createPortal(
+        <div className={`fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50 ${cerrando ? 'animate-overlay-out' : 'animate-overlay-in'}`} onClick={cerrarEdicion}>
+          <div className={`bg-white rounded-t-xl sm:rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-card ${cerrando ? 'animate-modal-out' : 'animate-modal-in'}`} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100">
               <h3 className="font-semibold text-slate-800 text-sm sm:text-base pr-4">Editar Cliente — ID {editando.id_cliente}</h3>
               <button onClick={cerrarEdicion} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
@@ -173,14 +179,15 @@ export default function ListaClientes() {
                 <textarea name="direccion_cliente" value={editForm.direccion_cliente} onChange={handleEditChange} className={inputClass} rows={2} />
               </div>
               <div className="flex gap-3 pt-2 border-t border-slate-100">
-                <button type="button" onClick={cerrarEdicion} className="flex-1 py-2.5 border border-slate-200 rounded-2xl text-slate-700 text-sm">Cancelar</button>
-                <button type="submit" className="flex-1 btn-grad text-white py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2">
+                <button type="button" onClick={cerrarEdicion} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-slate-700 text-sm">Cancelar</button>
+                <button type="submit" className="flex-1 btn-grad text-white py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2">
                   <Save className="w-4 h-4" /> Guardar Cambios
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </Layout>
   );

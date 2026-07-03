@@ -51,7 +51,7 @@ export default function Configuracion() {
   const Toggle = ({ name, checked }: { name: keyof AppConfig; checked: boolean }) => (
     <label className="relative inline-flex items-center cursor-pointer">
       <input type="checkbox" name={name} checked={checked} onChange={handleChange} className="sr-only peer" />
-      <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-teal-400 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-500" />
+      <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-400 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600" />
     </label>
   );
 
@@ -79,7 +79,7 @@ export default function Configuracion() {
 
         <div className="card-soft overflow-hidden">
           <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-emerald-500" />
+            <DollarSign className="w-4 h-4 text-brand-700" />
             <p className="font-semibold text-slate-800 text-sm">Parámetros Financieros por Defecto</p>
           </div>
           <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -120,9 +120,9 @@ export default function Configuracion() {
               <input type="number" name="montoMaximo" value={config.montoMaximo} onChange={handleChange} className={inputClass} />
             </div>
           </div>
-          <div className="mx-5 mb-5 bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2">
-            <Percent className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-700">
+          <div className="mx-5 mb-5 bg-slate-50 border border-slate-200 rounded-lg p-3 flex gap-2">
+            <Percent className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-slate-600">
               Valores iniciales para nuevas solicitudes. Plazo y monto máximo se validan al registrar.
               Las notificaciones aparecen en la campana del header (email/SMS se registran como canal adicional).
             </p>
@@ -131,7 +131,7 @@ export default function Configuracion() {
 
         <div className="card-soft overflow-hidden">
           <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
-            <Bell className="w-4 h-4 text-amber-500" />
+            <Bell className="w-4 h-4 text-slate-500" />
             <p className="font-semibold text-slate-800 text-sm">Notificaciones</p>
           </div>
           <div className="divide-y divide-slate-100">
@@ -152,7 +152,7 @@ export default function Configuracion() {
 
         <div className="card-soft overflow-hidden">
           <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
-            <Shield className="w-4 h-4 text-indigo-500" />
+            <Shield className="w-4 h-4 text-slate-500" />
             <p className="font-semibold text-slate-800 text-sm">Políticas de Aprobación</p>
           </div>
           <div className="p-5 space-y-4">
@@ -171,11 +171,11 @@ export default function Configuracion() {
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row gap-3">
-          <button type="button" onClick={() => navigate(paths.dashboard)} className="flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 border border-slate-200 rounded-2xl text-slate-700 text-sm">
+          <button type="button" onClick={() => navigate(paths.dashboard)} className="flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 border border-slate-200 rounded-lg text-slate-700 text-sm">
             <X className="w-4 h-4" /> Cancelar
           </button>
           <button onClick={handleGuardar} disabled={saving}
-            className="flex-1 btn-grad text-white py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60">
+            className="flex-1 btn-grad text-white py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60">
             <Save className="w-4 h-4" />
             {saving ? 'Guardando…' : 'Guardar Configuración'}
           </button>

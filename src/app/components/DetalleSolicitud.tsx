@@ -11,10 +11,10 @@ import { paths } from '../lib/routes';
 import type { Cliente, Solicitud } from '../lib/types';
 
 const estadoStyle: Record<string, string> = {
-  Aprobado: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
-  Pendiente: 'bg-amber-100 text-amber-700 ring-amber-200',
-  Rechazado: 'bg-rose-100 text-rose-700 ring-rose-200',
-  Calculado: 'bg-indigo-100 text-indigo-700 ring-indigo-200',
+  Aprobado: 'bg-brand-50 text-brand-700 border border-brand-200',
+  Pendiente: 'bg-amber-50 text-amber-700 border border-amber-200',
+  Rechazado: 'bg-red-50 text-red-700 border border-red-200',
+  Calculado: 'bg-slate-100 text-slate-600 border border-slate-200',
 };
 
 const estadoOpciones = ['Pendiente', 'Aprobado', 'Rechazado'] as const;
@@ -90,7 +90,7 @@ export default function DetalleSolicitud() {
       <Layout pageTitle="Solicitud no encontrada" pageSubtitle="Solicitudes">
         <div className="card-soft p-8 text-center max-w-md mx-auto">
           <p className="text-slate-600 text-sm mb-4">{error || 'La solicitud no existe.'}</p>
-          <Link to={paths.solicitudes} className="text-violet-600 font-semibold text-sm hover:underline">
+          <Link to={paths.solicitudes} className="text-brand-700 font-semibold text-sm hover:underline">
             Volver a solicitudes
           </Link>
         </div>
@@ -109,7 +109,7 @@ export default function DetalleSolicitud() {
         <button
           type="button"
           onClick={() => navigate(paths.solicitudes)}
-          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-violet-600 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-brand-700 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Volver a solicitudes
@@ -117,16 +117,15 @@ export default function DetalleSolicitud() {
 
         {/* Hero */}
         <div className="card-soft overflow-hidden">
-          <div className="bg-grad-brand px-5 sm:px-6 py-5 sm:py-6 relative overflow-hidden">
-            <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
-            <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="bg-brand-600 px-5 sm:px-6 py-5 sm:py-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
                   <Car className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <p className="text-white/70 text-xs font-mono mb-1">{s.id}</p>
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                     {s.marca_vehiculo} {s.modelo_vehiculo}
                   </h2>
                   <p className="text-white/80 text-sm mt-1 flex items-center gap-1.5">
@@ -135,7 +134,7 @@ export default function DetalleSolicitud() {
                   </p>
                 </div>
               </div>
-              <span className={`self-start px-3 py-1 rounded-full text-xs font-bold ring-1 ${estadoStyle[s.estado] || 'bg-white/20 text-white ring-white/30'}`}>
+              <span className={`self-start px-3 py-1 rounded-lg text-xs font-bold ${estadoStyle[s.estado] || 'bg-white/15 text-white'}`}>
                 {s.estado}
               </span>
             </div>
@@ -144,17 +143,17 @@ export default function DetalleSolicitud() {
           {/* KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
             {[
-              { label: 'Precio vehículo', value: money(s, s.precio_vehiculo), icon: Car, color: 'text-violet-500' },
-              { label: 'Cuota inicial', value: money(s, s.cuota_inicial), icon: Wallet, color: 'text-emerald-500' },
-              { label: 'Monto financiado', value: money(s, s.monto_prestamo), icon: CreditCard, color: 'text-indigo-500' },
-              { label: 'Valor residual', value: money(s, s.valor_residual), icon: TrendingDown, color: 'text-amber-500' },
+              { label: 'Precio vehículo', value: money(s, s.precio_vehiculo), icon: Car, color: 'text-slate-400' },
+              { label: 'Cuota inicial', value: money(s, s.cuota_inicial), icon: Wallet, color: 'text-slate-400' },
+              { label: 'Monto financiado', value: money(s, s.monto_prestamo), icon: CreditCard, color: 'text-brand-700' },
+              { label: 'Valor residual', value: money(s, s.valor_residual), icon: TrendingDown, color: 'text-slate-400' },
             ].map((kpi) => (
               <div key={kpi.label} className="px-4 sm:px-5 py-4">
                 <div className="flex items-center gap-2 mb-1">
                   <kpi.icon className={`w-4 h-4 ${kpi.color}`} />
                   <p className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wide">{kpi.label}</p>
                 </div>
-                <p className="text-base sm:text-lg font-extrabold text-slate-900 tabular-nums">{kpi.value}</p>
+                <p className="text-base sm:text-lg font-bold text-slate-900 tabular tabular-nums">{kpi.value}</p>
               </div>
             ))}
           </div>
@@ -164,7 +163,7 @@ export default function DetalleSolicitud() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <section className="card-soft p-5">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Percent className="w-4 h-4 text-violet-500" />
+              <Percent className="w-4 h-4 text-brand-700" />
               Condiciones financieras
             </h3>
             <dl className="space-y-3">
@@ -185,7 +184,7 @@ export default function DetalleSolicitud() {
 
           <section className="card-soft p-5">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-emerald-500" />
+              <Calendar className="w-4 h-4 text-brand-700" />
               Plazos y gracia
             </h3>
             <dl className="space-y-3">
@@ -213,11 +212,11 @@ export default function DetalleSolicitud() {
                 key={op}
                 type="button"
                 onClick={() => setEditandoEstado(op)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all
+                className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition-all
                   ${editandoEstado === op
-                    ? op === 'Aprobado' ? 'bg-emerald-500 border-emerald-500 text-white shadow-money'
-                      : op === 'Rechazado' ? 'bg-rose-500 border-rose-500 text-white'
-                      : 'bg-amber-500 border-amber-500 text-white'
+                    ? op === 'Aprobado' ? 'bg-brand-600 border-brand-600 text-white'
+                      : op === 'Rechazado' ? 'bg-red-600 border-red-600 text-white'
+                      : 'bg-amber-600 border-amber-600 text-white'
                     : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'}`}
               >
                 {op}
@@ -229,7 +228,7 @@ export default function DetalleSolicitud() {
               type="button"
               onClick={guardarEstado}
               disabled={guardando}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 btn-grad text-white px-5 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 btn-grad text-white px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-60"
             >
               <CheckCircle2 className="w-4 h-4" />
               {guardando ? 'Guardando…' : 'Guardar estado'}
@@ -242,15 +241,15 @@ export default function DetalleSolicitud() {
           <button
             type="button"
             onClick={() => navigate(paths.solicitudEditar(s.id))}
-            className="flex-1 inline-flex items-center justify-center gap-2 py-3 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+            className="flex-1 inline-flex items-center justify-center gap-2 py-3 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
           >
-            <Edit2 className="w-4 h-4 text-emerald-500" />
+            <Edit2 className="w-4 h-4 text-slate-500" />
             Editar solicitud
           </button>
           <button
             type="button"
             onClick={() => navigate(paths.amortizacionSolicitud(s.id))}
-            className="flex-1 inline-flex items-center justify-center gap-2 btn-grad text-white py-3 rounded-2xl text-sm font-bold"
+            className="flex-1 inline-flex items-center justify-center gap-2 btn-grad text-white py-3 rounded-lg text-sm font-bold"
           >
             <BarChart3 className="w-4 h-4" />
             Ver amortización

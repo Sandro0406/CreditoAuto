@@ -168,9 +168,9 @@ export default function SolicitudCredito() {
       pageSubtitle="Solicitudes"
     >
       <form onSubmit={handleSubmit} className="space-y-4 max-w-4xl mx-auto">
-        {error && <div className="bg-rose-50 border border-rose-200 rounded-2xl px-4 py-2.5 text-rose-600 text-xs">{error}</div>}
+        {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-red-600 text-xs">{error}</div>}
         {!isEdit && (
-          <div className="bg-violet-50 border border-violet-100 rounded-2xl px-4 py-3 text-xs text-violet-800">
+          <div className="bg-brand-50 border border-brand-200 rounded-lg px-4 py-3 text-xs text-brand-900">
             Políticas activas: auto-aprobación hasta {Number(settings.autoaprobacionHasta).toLocaleString('es-PE')},
             monto máx. {Number(settings.montoMaximo).toLocaleString('es-PE')},
             plazo máx. {settings.plazoMaximo} meses.
@@ -180,7 +180,7 @@ export default function SolicitudCredito() {
 
         <div className="card-soft overflow-hidden">
           <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
-            <User className="w-4 h-4 text-violet-500" />
+            <User className="w-4 h-4 text-brand-700" />
             <p className="font-semibold text-slate-700 text-sm">Cliente</p>
           </div>
           <div className="p-5">
@@ -196,7 +196,7 @@ export default function SolicitudCredito() {
 
         <div className="card-soft overflow-hidden">
           <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
-            <Car className="w-4 h-4 text-cyan-500" />
+            <Car className="w-4 h-4 text-slate-500" />
             <p className="font-semibold text-slate-700 text-sm">Datos del Vehículo</p>
           </div>
           <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -217,7 +217,7 @@ export default function SolicitudCredito() {
 
         <div className="card-soft overflow-hidden">
           <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-emerald-500" />
+            <CreditCard className="w-4 h-4 text-brand-700" />
             <p className="font-semibold text-slate-700 text-sm">Condiciones del Crédito</p>
           </div>
           <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -282,19 +282,19 @@ export default function SolicitudCredito() {
           </div>
 
           {precioNum > 0 && (
-            <div className="mx-5 mb-5 bg-grad-brand animate-pan rounded-3xl p-5 relative overflow-hidden shadow-brand">
-              <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="mx-5 mb-5 bg-brand-600 rounded-xl p-5 shadow-card">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <p className="text-[10px] text-white/70 font-bold uppercase">Precio Vehículo</p>
-                  <p className="font-extrabold text-white text-lg mt-1">{sym} {precioNum.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</p>
+                  <p className="text-[10px] text-white/70 font-semibold uppercase tracking-wider">Precio Vehículo</p>
+                  <p className="font-bold text-white text-lg mt-1 tabular">{sym} {precioNum.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-white/70 font-bold uppercase">Monto Financiado</p>
-                  <p className="font-extrabold text-white text-lg mt-1">{sym} {montoFinanciado.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</p>
+                  <p className="text-[10px] text-white/70 font-semibold uppercase tracking-wider">Monto Financiado</p>
+                  <p className="font-bold text-white text-lg mt-1 tabular">{sym} {montoFinanciado.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-white/70 font-bold uppercase">Cuota Balón</p>
-                  <p className="font-extrabold text-white text-lg mt-1">{sym} {vrNum.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</p>
+                  <p className="text-[10px] text-white/70 font-semibold uppercase tracking-wider">Cuota Balón</p>
+                  <p className="font-bold text-white text-lg mt-1 tabular">{sym} {vrNum.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</p>
                 </div>
               </div>
             </div>
@@ -303,7 +303,7 @@ export default function SolicitudCredito() {
 
         <div className="card-soft overflow-hidden">
           <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-amber-500" />
+            <Clock className="w-4 h-4 text-slate-500" />
             <p className="font-semibold text-slate-700 text-sm">Periodo de Gracia</p>
           </div>
           <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -325,10 +325,10 @@ export default function SolicitudCredito() {
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row gap-3">
-          <button type="button" onClick={() => navigate(isEdit && id ? paths.solicitudDetalle(id) : paths.solicitudes)} className="flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 border border-slate-200 rounded-2xl text-slate-700 text-sm">
+          <button type="button" onClick={() => navigate(isEdit && id ? paths.solicitudDetalle(id) : paths.solicitudes)} className="flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 text-sm">
             <X className="w-4 h-4" /> Cancelar
           </button>
-          <button type="submit" disabled={saving} className="flex-1 btn-grad text-white py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60">
+          <button type="submit" disabled={saving} className="flex-1 btn-grad text-white py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60">
             <Save className="w-4 h-4" />
             {saving ? 'Guardando…' : isEdit ? 'Guardar Cambios' : 'Registrar Solicitud de Crédito'}
           </button>

@@ -5,3 +5,4 @@ dist/
 password_db.txt
 .DS_Store
 .claude/
+.vercel

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Users, CreditCard, Car, FileText, PlusCircle,
-  BarChart3, Settings, Clock, ArrowUpRight, Sparkles, ArrowRight,
+  BarChart3, Settings, Clock, ArrowRight,
 } from 'lucide-react';
 import Layout from './Layout';
 import { getClients } from '../lib/api/clients';
@@ -38,101 +38,91 @@ export default function Dashboard() {
   }, []);
 
   const statCards = [
-    { label: 'Clientes registrados', value: stats.clientes, icon: Users, grad: 'bg-grad-brand', shadow: 'shadow-brand', path: paths.clientes },
-    { label: 'Créditos aprobados', value: stats.activos, icon: CreditCard, grad: 'bg-grad-money', shadow: 'shadow-money', path: paths.solicitudes },
-    { label: 'Total solicitudes', value: stats.total, icon: Car, grad: 'bg-grad-sky', shadow: '', path: paths.solicitudes },
-    { label: 'Pendientes de revisión', value: stats.pendientes, icon: FileText, grad: 'bg-grad-warm', shadow: '', path: paths.solicitudes },
+    { label: 'Clientes registrados', value: stats.clientes, icon: Users, path: paths.clientes },
+    { label: 'Créditos aprobados', value: stats.activos, icon: CreditCard, path: paths.solicitudes, accent: true },
+    { label: 'Total solicitudes', value: stats.total, icon: Car, path: paths.solicitudes },
+    { label: 'Pendientes de revisión', value: stats.pendientes, icon: FileText, path: paths.solicitudes },
   ];
 
   const quickCards = [
-    { title: 'Nuevo cliente', desc: 'Registrar información del cliente', icon: PlusCircle, path: paths.clienteNuevo, grad: 'bg-grad-brand' },
-    { title: 'Nueva solicitud', desc: 'Crédito vehicular Compra Inteligente', icon: CreditCard, path: paths.solicitudNueva, grad: 'bg-grad-money' },
-    { title: 'Amortización', desc: 'Cronograma, VAN, TIR y TCEA', icon: BarChart3, path: paths.amortizacion, grad: 'bg-grad-sky' },
-    { title: 'Configuración', desc: 'Moneda, tasa y parámetros', icon: Settings, path: paths.configuracion, grad: 'bg-grad-warm' },
+    { title: 'Nuevo cliente', desc: 'Registrar información del cliente', icon: PlusCircle, path: paths.clienteNuevo },
+    { title: 'Nueva solicitud', desc: 'Crédito vehicular Compra Inteligente', icon: CreditCard, path: paths.solicitudNueva },
+    { title: 'Amortización', desc: 'Cronograma, VAN, TIR y TCEA', icon: BarChart3, path: paths.amortizacion },
+    { title: 'Configuración', desc: 'Moneda, tasa y parámetros', icon: Settings, path: paths.configuracion },
   ];
 
   const estadoColor: Record<string, string> = {
-    aprobado: 'text-emerald-600',
+    aprobado: 'text-brand-700',
     pendiente: 'text-amber-600',
-    rechazado: 'text-rose-500',
+    rechazado: 'text-red-600',
   };
 
   return (
     <Layout pageTitle="Inicio" pageSubtitle="Bandeja principal">
-      {/* Hero banner */}
-      <div className="bg-grad-brand animate-pan rounded-[28px] p-6 sm:p-7 relative overflow-hidden mb-5 shadow-brand">
-        <div className="absolute -right-10 -top-10 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
-        <div className="absolute right-20 bottom-0 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1 mb-3">
-              <Sparkles className="w-3.5 h-3.5 text-white" />
-              <span className="text-white text-xs font-semibold">{new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
-            </div>
-            <h2 className="text-white text-2xl sm:text-[28px] font-extrabold tracking-tight capitalize">¡Hola, {userName}! 👋</h2>
-            <p className="text-white/80 text-sm mt-1 max-w-md">Gestiona clientes, simula créditos y revisa los indicadores de transparencia desde un solo lugar.</p>
-          </div>
-          <button
-            onClick={() => navigate(paths.solicitudNueva)}
-            className="bg-white text-violet-700 font-bold text-sm px-5 py-3 rounded-2xl flex items-center gap-2 hover:gap-3 transition-all shadow-lg shrink-0 self-start"
-          >
-            Nueva solicitud
-            <ArrowRight className="w-4 h-4" />
-          </button>
+      {/* Encabezado */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight capitalize">Hola, {userName}</h2>
+          <p className="text-slate-500 text-sm mt-1">
+            {new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {' · '}Gestiona clientes, simula créditos y revisa la transparencia.
+          </p>
         </div>
+        <button
+          onClick={() => navigate(paths.solicitudNueva)}
+          className="btn-grad text-sm px-4 py-2.5 flex items-center gap-2 shrink-0 self-start sm:self-auto"
+        >
+          <PlusCircle className="w-4 h-4" />
+          Nueva solicitud
+        </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
+      {/* KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {statCards.map((card, i) => (
           <button
             key={card.label}
             onClick={() => navigate(card.path)}
-            className={`card-soft lift p-4 sm:p-5 text-left group animate-fade-up delay-${i + 1}`}
+            className={`card-soft lift p-4 sm:p-5 text-left animate-fade-up delay-${i + 1}`}
           >
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className={`w-10 h-10 sm:w-12 sm:h-12 ${card.grad} icon-tile ${card.shadow}`}>
-                <card.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" strokeWidth={2.2} />
-              </div>
-              <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-violet-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-4 ${card.accent ? 'bg-brand-50' : 'bg-slate-100'}`}>
+              <card.icon className={`w-[18px] h-[18px] ${card.accent ? 'text-brand-700' : 'text-slate-500'}`} strokeWidth={2.1} />
             </div>
-            <p className="text-2xl sm:text-[32px] font-extrabold text-slate-900 leading-none tracking-tight">{card.value}</p>
-            <p className="text-xs text-slate-500 mt-1.5 sm:mt-2 font-medium leading-snug">{card.label}</p>
+            <p className="text-[28px] sm:text-[32px] font-bold text-slate-900 leading-none tracking-tight tabular">{card.value}</p>
+            <p className="text-[13px] text-slate-500 mt-2 font-medium leading-snug">{card.label}</p>
           </button>
         ))}
       </div>
 
-      {/* Quick actions + Activity */}
+      {/* Acciones rápidas + Actividad */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Quick actions */}
         <div className="lg:col-span-2 card-soft overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100">
-            <p className="text-sm font-bold text-slate-800">Acciones rápidas</p>
+          <div className="px-5 py-3.5 border-b border-slate-100">
+            <p className="text-sm font-semibold text-slate-800">Acciones rápidas</p>
           </div>
-          <div className="p-3 space-y-1">
+          <div className="p-2">
             {quickCards.map((card) => (
               <button
                 key={card.title}
                 onClick={() => navigate(card.path)}
-                className="w-full flex items-center gap-4 px-3 py-3 rounded-2xl text-left hover:bg-slate-50 transition-colors group"
+                className="w-full flex items-center gap-3.5 px-3 py-3 rounded-lg text-left hover:bg-slate-50 transition-colors group"
               >
-                <div className={`w-11 h-11 ${card.grad} icon-tile shrink-0 group-hover:scale-105 transition-transform`}>
-                  <card.icon className="w-5 h-5 text-white" strokeWidth={2.2} />
+                <div className="w-9 h-9 rounded-lg bg-slate-100 group-hover:bg-brand-50 flex items-center justify-center shrink-0 transition-colors">
+                  <card.icon className="w-[18px] h-[18px] text-slate-500 group-hover:text-brand-700 transition-colors" strokeWidth={2.1} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-800">{card.title}</p>
                   <p className="text-xs text-slate-400 mt-0.5 truncate">{card.desc}</p>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-violet-500 group-hover:translate-x-1 transition-all shrink-0" />
+                <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-brand-600 transition-colors shrink-0" />
               </button>
             ))}
           </div>
         </div>
 
-        {/* Recent activity */}
         <div className="lg:col-span-3 card-soft overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <p className="text-sm font-bold text-slate-800">Actividad reciente</p>
+          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+            <p className="text-sm font-semibold text-slate-800">Actividad reciente</p>
             <div className="flex items-center gap-1.5 text-slate-400">
               <Clock className="w-3.5 h-3.5" />
               <span className="text-xs font-medium">En vivo</span>
@@ -140,23 +130,21 @@ export default function Dashboard() {
           </div>
           {actividad.length === 0 ? (
             <div className="py-14 text-center">
-              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <Clock className="w-7 h-7 text-slate-300" />
+              <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <Clock className="w-6 h-6 text-slate-300" />
               </div>
               <p className="text-slate-500 text-sm font-medium">Sin actividad reciente</p>
               <p className="text-slate-400 text-xs mt-1">Registra clientes o solicitudes para empezar</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-slate-100">
               {actividad.map((item, i) => (
-                <div key={i} className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50/70 transition-colors">
+                <div key={i} className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={`${item.tipo === 'cliente' ? 'bg-grad-brand' : 'bg-grad-money'} p-0.5 rounded-full shrink-0`}>
-                      <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center">
-                        {item.tipo === 'cliente'
-                          ? <Users className="w-4 h-4 text-violet-600" strokeWidth={2.3} />
-                          : <Car className="w-4 h-4 text-emerald-600" strokeWidth={2.3} />}
-                      </div>
+                    <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                      {item.tipo === 'cliente'
+                        ? <Users className="w-4 h-4 text-slate-500" strokeWidth={2.2} />
+                        : <Car className="w-4 h-4 text-brand-700" strokeWidth={2.2} />}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-800 truncate capitalize">{item.label}</p>
@@ -166,7 +154,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="text-right shrink-0 ml-4">
-                    {item.monto && <p className="text-sm font-bold text-slate-800">{item.monto}</p>}
+                    {item.monto && <p className="text-sm font-semibold text-slate-800 tabular">{item.monto}</p>}
                     <p className="text-xs text-slate-400">{item.fecha}</p>
                   </div>
                 </div>
@@ -175,9 +163,9 @@ export default function Dashboard() {
           )}
           {actividad.length > 0 && (
             <div className="px-5 py-3 border-t border-slate-100">
-              <button onClick={() => navigate(paths.solicitudes)} className="text-xs text-violet-600 hover:text-violet-700 font-semibold flex items-center gap-1 group">
+              <button onClick={() => navigate(paths.solicitudes)} className="text-xs text-brand-700 hover:text-brand-800 font-semibold flex items-center gap-1 group">
                 Ver todas las solicitudes
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
           )}

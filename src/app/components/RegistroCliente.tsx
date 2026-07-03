@@ -55,7 +55,7 @@ export default function RegistroCliente() {
 
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
             {error && (
-              <div className="bg-rose-50 border border-rose-200 rounded-2xl px-4 py-2.5 text-rose-600 text-xs">{error}</div>
+              <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-red-600 text-xs">{error}</div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
@@ -85,11 +85,11 @@ export default function RegistroCliente() {
 
             <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t border-slate-100">
               <button type="button" onClick={() => navigate(paths.clientes)}
-                className="flex-1 py-3 sm:py-2.5 border border-slate-200 rounded-2xl text-slate-700 text-sm font-medium hover:bg-slate-50 transition">
+                className="flex-1 py-3 sm:py-2.5 border border-slate-200 rounded-lg text-slate-700 text-sm font-medium hover:bg-slate-50 transition">
                 Cancelar
               </button>
               <button type="submit" disabled={saving}
-                className="flex-1 btn-grad text-white py-3 rounded-2xl text-sm font-bold transition flex items-center justify-center gap-2 disabled:opacity-60">
+                className="flex-1 btn-grad text-white py-3 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 disabled:opacity-60">
                 <Save className="w-4 h-4" />
                 {saving ? 'Guardando…' : 'Guardar Cliente'}
               </button>

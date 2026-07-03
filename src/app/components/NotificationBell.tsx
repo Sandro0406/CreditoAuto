@@ -77,19 +77,19 @@ export default function NotificationBell() {
       <button
         type="button"
         onClick={handleOpen}
-        className="relative w-10 h-10 rounded-2xl bg-slate-100/70 hover:bg-slate-200/70 flex items-center justify-center transition-colors"
+        className="relative w-10 h-10 rounded-lg bg-slate-100/70 hover:bg-slate-200/70 flex items-center justify-center transition-colors"
         aria-label="Notificaciones"
       >
         <Bell className="w-[18px] h-[18px] text-slate-500" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[min(22rem,calc(100vw-2rem))] bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-fade-up">
+        <div className="absolute right-0 top-full mt-2 w-[min(22rem,calc(100vw-2rem))] bg-white rounded-xl shadow-card border border-slate-100 z-50 overflow-hidden animate-fade-up">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
             <p className="text-sm font-bold text-slate-800">Notificaciones</p>
             <MessageSquare className="w-4 h-4 text-slate-400" />
@@ -105,11 +105,11 @@ export default function NotificationBell() {
                 return (
                   <div
                     key={n.id}
-                    className={`px-4 py-3 border-b border-slate-50 hover:bg-slate-50/80 ${!n.read_at ? 'bg-violet-50/40' : ''}`}
+                    className={`px-4 py-3 border-b border-slate-50 hover:bg-slate-50/80 ${!n.read_at ? 'bg-brand-50/60' : ''}`}
                   >
                     <div className="flex gap-3">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0
-                        ${n.channel === 'email' ? 'bg-sky-100 text-sky-600' : n.channel === 'sms' ? 'bg-emerald-100 text-emerald-600' : 'bg-violet-100 text-violet-600'}`}>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0
+                        ${n.channel === 'in_app' ? 'bg-brand-50 text-brand-700' : 'bg-slate-100 text-slate-500'}`}>
                         <Icon className="w-4 h-4" />
                       </div>
                       <div className="min-w-0 flex-1">

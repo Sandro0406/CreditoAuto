@@ -8,6 +8,45 @@ export async function signIn(username: string, password: string) {
   return data;
 }
 
+/**
+ * Registro abierto de un nuevo asesor. Acepta usuario o email (usernameToEmail
+ * lo resuelve). Devuelve si quedó una sesión activa o si falta confirmar email.
+ */
+export async function signUp(
+  username: string,
+  password: string
+): Promise<{ session: unknown; needsConfirmation: boolean }> {
+  const email = usernameToEmail(username);
+  const cleanUsername = username.trim().toLowerCase().split('@')[0];
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { username: cleanUsername, role: 'asesor' } },
+  });
+  if (error) throw error;
+
+  // Best-effort: asegurar la fila en public.users (por si no hay trigger).
+  // Solo funciona si signUp ya devolvió sesión; si falla lo ignoramos.
+  if (data.user && data.session) {
+    await supabase
+      .from('users')
+      .upsert({ id: data.user.id, username: cleanUsername, role: 'asesor' });
+  }
+
+  if (data.session) {
+    return { session: data.session, needsConfirmation: false };
+  }
+
+  // Sin sesión: puede que la confirmación de email esté desactivada y podamos
+  // iniciar sesión directamente; si no, hay que confirmar el correo.
+  const signInRes = await supabase.auth.signInWithPassword({ email, password });
+  if (!signInRes.error && signInRes.data.session) {
+    return { session: signInRes.data.session, needsConfirmation: false };
+  }
+  return { session: null, needsConfirmation: true };
+}
+
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;

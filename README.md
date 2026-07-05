@@ -43,6 +43,7 @@ Sistema de crédito vehicular (Compra Inteligente) integrado con Supabase.
 - `docs/FLOW.md` — flujo de negocio
 - `docs/VALIDATION.md` — casos numéricos §6D
 - `docs/COURSE-PARITY.md` — paridad con curso UPC
+- `docs/EXCEL-PARITY-PLAN.md` — plan para reproducir el Excel modelo (gastos, cuotón, TCEA)
 - `docs/REVIEW.md` — revisión de código y checkpoints
 
 ## Validación

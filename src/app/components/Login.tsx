@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Eye, EyeOff, Car, ArrowRight, TrendingUp, ShieldCheck, Calculator } from 'lucide-react';
-import { signIn, getProfileUsername } from '../lib/api/auth';
+import { signIn, signUp, getProfileUsername } from '../lib/api/auth';
 
 interface LoginProps {
   onLogin: (name: string) => void;
@@ -13,27 +13,67 @@ const features = [
 ];
 
 export default function Login({ onLogin }: LoginProps) {
+  const [modo, setModo] = useState<'login' | 'registro'>('login');
   const [usuario, setUsuario] = useState('');
   const [contrasena, setContrasena] = useState('');
+  const [confirmar, setConfirmar] = useState('');
   const [mostrar, setMostrar] = useState(false);
   const [error, setError] = useState('');
+  const [aviso, setAviso] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const esRegistro = modo === 'registro';
+
+  const cambiarModo = (nuevo: 'login' | 'registro') => {
+    setModo(nuevo);
+    setError('');
+    setAviso('');
+    setConfirmar('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setAviso('');
     if (!usuario.trim() || !contrasena.trim()) {
       setError('Completa ambos campos para continuar.');
       return;
     }
+    if (esRegistro) {
+      if (contrasena.length < 6) {
+        setError('La contraseña debe tener al menos 6 caracteres.');
+        return;
+      }
+      if (contrasena !== confirmar) {
+        setError('Las contraseñas no coinciden.');
+        return;
+      }
+    }
     setLoading(true);
     try {
-      await signIn(usuario.trim(), contrasena);
-      const name = await getProfileUsername();
-      onLogin(name || usuario.trim());
+      if (esRegistro) {
+        const { needsConfirmation } = await signUp(usuario.trim(), contrasena);
+        if (needsConfirmation) {
+          setAviso('Cuenta creada. Revisa tu correo para confirmarla y luego inicia sesión.');
+          cambiarModo('login');
+          return;
+        }
+        const name = await getProfileUsername();
+        onLogin(name || usuario.trim());
+      } else {
+        await signIn(usuario.trim(), contrasena);
+        const name = await getProfileUsername();
+        onLogin(name || usuario.trim());
+      }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error al iniciar sesión';
-      setError(msg.includes('Invalid login') ? 'Usuario o contraseña incorrectos.' : msg);
+      const msg = err instanceof Error ? err.message : 'Error al procesar la solicitud';
+      if (msg.includes('Invalid login')) {
+        setError('Usuario o contraseña incorrectos.');
+      } else if (msg.includes('already registered') || msg.includes('already been registered')) {
+        setError('Ese usuario ya está registrado. Inicia sesión.');
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -86,18 +126,24 @@ export default function Login({ onLogin }: LoginProps) {
             <span className="font-bold text-lg tracking-tight text-slate-900">CréditoAuto</span>
           </div>
 
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Iniciar sesión</h1>
-          <p className="text-slate-500 text-sm mt-1.5 mb-7">Ingresa tus credenciales para continuar.</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            {esRegistro ? 'Crear cuenta' : 'Iniciar sesión'}
+          </h1>
+          <p className="text-slate-500 text-sm mt-1.5 mb-7">
+            {esRegistro
+              ? 'Registra un nuevo asesor para acceder a la plataforma.'
+              : 'Ingresa tus credenciales para continuar.'}
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Usuario</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Email</label>
               <input
                 type="text"
                 value={usuario}
                 onChange={(e) => setUsuario(e.target.value)}
                 className="input-soft"
-                placeholder="asesor"
+                placeholder="example@mail.com"
                 autoComplete="username"
               />
             </div>
@@ -111,7 +157,7 @@ export default function Login({ onLogin }: LoginProps) {
                   onChange={(e) => setContrasena(e.target.value)}
                   className="input-soft pr-11"
                   placeholder="••••••••"
-                  autoComplete="current-password"
+                  autoComplete={esRegistro ? 'new-password' : 'current-password'}
                 />
                 <button
                   type="button"
@@ -124,9 +170,29 @@ export default function Login({ onLogin }: LoginProps) {
               </div>
             </div>
 
+            {esRegistro && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Confirmar contraseña</label>
+                <input
+                  type={mostrar ? 'text' : 'password'}
+                  value={confirmar}
+                  onChange={(e) => setConfirmar(e.target.value)}
+                  className="input-soft"
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                />
+              </div>
+            )}
+
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
                 <p className="text-red-600 text-xs font-medium">{error}</p>
+              </div>
+            )}
+
+            {aviso && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
+                <p className="text-emerald-700 text-xs font-medium">{aviso}</p>
               </div>
             )}
 
@@ -135,13 +201,22 @@ export default function Login({ onLogin }: LoginProps) {
               disabled={loading}
               className="btn-grad w-full py-3 text-sm font-semibold flex items-center justify-center gap-2 mt-1 disabled:opacity-60"
             >
-              {loading ? 'Ingresando…' : 'Iniciar sesión'}
+              {loading
+                ? (esRegistro ? 'Creando…' : 'Ingresando…')
+                : (esRegistro ? 'Crear cuenta' : 'Iniciar sesión')}
               {!loading && <ArrowRight className="w-4 h-4" />}
             </button>
           </form>
 
-          <p className="text-center text-xs text-slate-400 mt-8">
-            Email <strong className="text-slate-500">adoa2705@gmail.com</strong> o usuario <strong className="text-slate-500">adoa</strong>
+          <p className="text-center text-sm text-slate-500 mt-6">
+            {esRegistro ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?'}{' '}
+            <button
+              type="button"
+              onClick={() => cambiarModo(esRegistro ? 'login' : 'registro')}
+              className="font-semibold text-brand-700 hover:text-brand-800 transition-colors"
+            >
+              {esRegistro ? 'Inicia sesión' : 'Regístrate'}
+            </button>
           </p>
         </div>
       </div>

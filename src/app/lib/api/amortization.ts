@@ -28,6 +28,11 @@ function solicitudToCalcData(s: Solicitud): SolicitudCreditoData {
     moneda: s.moneda,
     fecha_inicio: s.fecha_inicio,
     valor_residual: s.valor_residual,
+    pct_seguro_desgravamen: s.pct_seguro_desgravamen,
+    seguro_riesgo: s.seguro_riesgo,
+    gps: s.gps,
+    portes: s.portes,
+    gastos_administrativos: s.gastos_administrativos,
   };
 }
 
@@ -62,6 +67,11 @@ export async function persistAmortization(
     final_balance: moneyToDb(row.saldo_final),
     debtor_flow: moneyToDb(row.flujo_deudor),
     present_value: moneyToDb(row.valor_actual),
+    credit_life_insurance: moneyToDb(row.seguro_desgravamen),
+    risk_insurance: moneyToDb(row.seguro_riesgo),
+    gps: moneyToDb(row.gps),
+    postage: moneyToDb(row.portes),
+    admin_fee: moneyToDb(row.gastos_administrativos),
   }));
 
   const { error: schedErr } = await supabase.from('payment_schedule').insert(scheduleRows);
@@ -83,6 +93,7 @@ export async function persistAmortization(
     french_installment: moneyToDb(indicadores.cuota_francesa),
     residual_value: moneyToDb(indicadores.valor_residual),
     calculation_snapshot: { flujos: indicadores.flujos },
+    total_expenses: moneyToDb(indicadores.total_gastos),
   });
   if (indErr) throw indErr;
 }
@@ -107,19 +118,32 @@ export async function loadPersistedAmortization(loanExternalCode: string) {
   if (iErr) throw iErr;
   if (!schedule?.length || !indicators) return null;
 
-  const cronograma: CronogramaRow[] = schedule.map((r) => ({
-    numero_cuota: r.installment_number,
-    fecha_pago: r.due_date,
-    tipo_periodo: r.grace_type as CronogramaRow['tipo_periodo'],
-    saldo_inicial: moneyFromDb(r.initial_balance),
-    interes: moneyFromDb(r.interest),
-    amortizacion: moneyFromDb(r.amortization),
-    cuota: moneyFromDb(r.installment_amount),
-    valor_residual_pagado: moneyFromDb(r.residual_paid),
-    saldo_final: moneyFromDb(r.final_balance),
-    flujo_deudor: moneyFromDb(r.debtor_flow),
-    valor_actual: moneyFromDb(r.present_value),
-  }));
+  const cronograma: CronogramaRow[] = schedule.map((r) => {
+    const seguroDesgravamen = moneyFromDb(r.credit_life_insurance);
+    const seguroRiesgo = moneyFromDb(r.risk_insurance);
+    const gps = moneyFromDb(r.gps);
+    const portes = moneyFromDb(r.postage);
+    const gastosAdministrativos = moneyFromDb(r.admin_fee);
+    return {
+      numero_cuota: r.installment_number,
+      fecha_pago: r.due_date,
+      tipo_periodo: r.grace_type as CronogramaRow['tipo_periodo'],
+      saldo_inicial: moneyFromDb(r.initial_balance),
+      interes: moneyFromDb(r.interest),
+      amortizacion: moneyFromDb(r.amortization),
+      cuota: moneyFromDb(r.installment_amount),
+      valor_residual_pagado: moneyFromDb(r.residual_paid),
+      saldo_final: moneyFromDb(r.final_balance),
+      flujo_deudor: moneyFromDb(r.debtor_flow),
+      valor_actual: moneyFromDb(r.present_value),
+      seguro_desgravamen: seguroDesgravamen,
+      seguro_riesgo: seguroRiesgo,
+      gps,
+      portes,
+      gastos_administrativos: gastosAdministrativos,
+      gastos_periodo: seguroDesgravamen + seguroRiesgo + gps + portes + gastosAdministrativos,
+    };
+  });
 
   const snapshot = indicators.calculation_snapshot as { flujos?: number[] };
   const indicadores: IndicadoresTransparencia = {
@@ -137,6 +161,7 @@ export async function loadPersistedAmortization(loanExternalCode: string) {
     cuota_francesa: moneyFromDb(indicators.french_installment),
     valor_residual: moneyFromDb(indicators.residual_value),
     flujos: snapshot.flujos || [],
+    total_gastos: moneyFromDb(indicators.total_expenses),
   };
 
   return { cronograma, indicadores };

@@ -57,6 +57,11 @@ export function loanToSolicitud(
     valor_residual: String(moneyFromDb(loan.residual_value_amount)),
     fecha_solicitud: new Date(loan.created_at).toLocaleDateString('es-PE'),
     estado: loan.status,
+    pct_seguro_desgravamen: String(loan.credit_life_insurance_rate),
+    seguro_riesgo: String(moneyFromDb(loan.risk_insurance_amount)),
+    gps: String(moneyFromDb(loan.gps_amount)),
+    portes: String(moneyFromDb(loan.postage_amount)),
+    gastos_administrativos: String(moneyFromDb(loan.admin_fee_amount)),
   };
 }
 
@@ -89,5 +94,10 @@ export function solicitudToLoanPayload(
     start_date: data.fecha_inicio || new Date().toISOString().split('T')[0],
     status: data.estado || 'Pendiente',
     currency_type: data.moneda || 'Soles',
+    credit_life_insurance_rate: Number(data.pct_seguro_desgravamen || 0),
+    risk_insurance_amount: moneyToDb(data.seguro_riesgo || 0),
+    gps_amount: moneyToDb(data.gps || 0),
+    postage_amount: moneyToDb(data.portes || 0),
+    admin_fee_amount: moneyToDb(data.gastos_administrativos || 0),
   };
 }

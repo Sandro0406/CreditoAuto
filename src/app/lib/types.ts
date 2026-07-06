@@ -29,6 +29,11 @@ export interface Solicitud {
   valor_residual: string;
   fecha_solicitud: string;
   estado: string;
+  pct_seguro_desgravamen?: string;
+  seguro_riesgo?: string;
+  gps?: string;
+  portes?: string;
+  gastos_administrativos?: string;
 }
 
 export interface AppConfig {
@@ -43,6 +48,11 @@ export interface AppConfig {
   notificacionesSMS: boolean;
   autoaprobacionHasta: string;
   requiereAprobacionGerencia: boolean;
+  pctSeguroDesgravamenDefecto: string;
+  seguroRiesgoDefecto: string;
+  gpsDefecto: string;
+  portesDefecto: string;
+  gastosAdminDefecto: string;
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -57,6 +67,11 @@ export const DEFAULT_CONFIG: AppConfig = {
   notificacionesSMS: false,
   autoaprobacionHasta: '50000',
   requiereAprobacionGerencia: true,
+  pctSeguroDesgravamenDefecto: '0.049',
+  seguroRiesgoDefecto: '4',
+  gpsDefecto: '20',
+  portesDefecto: '3.5',
+  gastosAdminDefecto: '3.5',
 };
 
 export const ADVISOR_EMAIL = 'adoa2705@gmail.com';

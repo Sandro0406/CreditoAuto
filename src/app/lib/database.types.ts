@@ -89,6 +89,11 @@ export interface Database {
           status: string;
           currency_type: string;
           created_at: string;
+          credit_life_insurance_rate: number;
+          risk_insurance_amount: number;
+          gps_amount: number;
+          postage_amount: number;
+          admin_fee_amount: number;
         };
         Insert: {
           id?: string;
@@ -112,6 +117,11 @@ export interface Database {
           status?: string;
           currency_type: string;
           created_at?: string;
+          credit_life_insurance_rate?: number;
+          risk_insurance_amount?: number;
+          gps_amount?: number;
+          postage_amount?: number;
+          admin_fee_amount?: number;
         };
         Update: Partial<Database['public']['Tables']['loans']['Insert']>;
       };
@@ -130,6 +140,11 @@ export interface Database {
           final_balance: number;
           debtor_flow: number;
           present_value: number;
+          credit_life_insurance: number;
+          risk_insurance: number;
+          gps: number;
+          postage: number;
+          admin_fee: number;
         };
         Insert: {
           id?: number;
@@ -145,6 +160,11 @@ export interface Database {
           final_balance: number;
           debtor_flow: number;
           present_value: number;
+          credit_life_insurance?: number;
+          risk_insurance?: number;
+          gps?: number;
+          postage?: number;
+          admin_fee?: number;
         };
         Update: Partial<Database['public']['Tables']['payment_schedule']['Insert']>;
       };
@@ -167,6 +187,7 @@ export interface Database {
           residual_value: number;
           calculation_snapshot: Json;
           created_at: string;
+          total_expenses: number;
         };
         Insert: {
           id?: number;
@@ -186,6 +207,7 @@ export interface Database {
           residual_value?: number;
           calculation_snapshot?: Json;
           created_at?: string;
+          total_expenses?: number;
         };
         Update: Partial<Database['public']['Tables']['financial_indicators']['Insert']>;
       };

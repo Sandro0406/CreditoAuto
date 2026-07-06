@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
-import { Car, CreditCard, Clock, Save, X, User } from 'lucide-react';
+import { Car, CreditCard, Clock, Save, X, User, ShieldCheck } from 'lucide-react';
 import Layout from './Layout';
 import { calcularMontoPrestamo, toNumber } from '../lib/financialCalculations';
 import { getClients } from '../lib/api/clients';
@@ -28,6 +28,11 @@ const emptyForm = {
   moneda: 'Soles',
   fecha_inicio: new Date().toISOString().split('T')[0],
   valor_residual: '0',
+  pct_seguro_desgravamen: '',
+  seguro_riesgo: '',
+  gps: '',
+  portes: '',
+  gastos_administrativos: '',
 };
 
 export default function SolicitudCredito() {
@@ -54,6 +59,11 @@ export default function SolicitudCredito() {
         tasa_interes: cfg.tasaInteresDefecto,
         tipo_tasa: cfg.tipoTasaDefecto,
         capitalizacion: cfg.capitalizacionDefecto,
+        pct_seguro_desgravamen: cfg.pctSeguroDesgravamenDefecto,
+        seguro_riesgo: cfg.seguroRiesgoDefecto,
+        gps: cfg.gpsDefecto,
+        portes: cfg.portesDefecto,
+        gastos_administrativos: cfg.gastosAdminDefecto,
       }));
     } catch {
       // defaults already set
@@ -299,6 +309,41 @@ export default function SolicitudCredito() {
               </div>
             </div>
           )}
+        </div>
+
+        <div className="card-soft overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-slate-500" />
+            <p className="font-semibold text-slate-700 text-sm">Seguros y Gastos Periódicos</p>
+          </div>
+          <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>% Seguro Desgravamen</label>
+              <input type="number" name="pct_seguro_desgravamen" value={formData.pct_seguro_desgravamen} onChange={handleChange} className={inputClass} step="0.001" min="0" />
+            </div>
+            <div>
+              <label className={labelClass}>Seguro de Riesgo</label>
+              <input type="number" name="seguro_riesgo" value={formData.seguro_riesgo} onChange={handleChange} className={inputClass} step="0.01" min="0" />
+            </div>
+            <div>
+              <label className={labelClass}>GPS</label>
+              <input type="number" name="gps" value={formData.gps} onChange={handleChange} className={inputClass} step="0.01" min="0" />
+            </div>
+            <div>
+              <label className={labelClass}>Portes</label>
+              <input type="number" name="portes" value={formData.portes} onChange={handleChange} className={inputClass} step="0.01" min="0" />
+            </div>
+            <div>
+              <label className={labelClass}>Gastos de Administración</label>
+              <input type="number" name="gastos_administrativos" value={formData.gastos_administrativos} onChange={handleChange} className={inputClass} step="0.01" min="0" />
+            </div>
+          </div>
+          <div className="mx-5 mb-5 bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <p className="text-xs text-slate-500">
+              Se cobran cada período (incluso en gracia) y afectan el flujo del deudor: por eso la TCEA
+              puede ser mayor a la TEA.
+            </p>
+          </div>
         </div>
 
         <div className="card-soft overflow-hidden">

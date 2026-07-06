@@ -131,6 +131,43 @@ export default function Configuracion() {
 
         <div className="card-soft overflow-hidden">
           <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
+            <Percent className="w-4 h-4 text-slate-500" />
+            <p className="font-semibold text-slate-800 text-sm">Seguros y Gastos Periódicos por Defecto</p>
+          </div>
+          <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>% Seguro de Desgravamen (por período)</label>
+              <input type="number" name="pctSeguroDesgravamenDefecto" value={config.pctSeguroDesgravamenDefecto} onChange={handleChange} step="0.001" min="0" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Seguro de Riesgo (monto fijo por período)</label>
+              <input type="number" name="seguroRiesgoDefecto" value={config.seguroRiesgoDefecto} onChange={handleChange} step="0.01" min="0" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>GPS (monto fijo por período)</label>
+              <input type="number" name="gpsDefecto" value={config.gpsDefecto} onChange={handleChange} step="0.01" min="0" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Portes (monto fijo por período)</label>
+              <input type="number" name="portesDefecto" value={config.portesDefecto} onChange={handleChange} step="0.01" min="0" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Gastos de Administración (monto fijo por período)</label>
+              <input type="number" name="gastosAdminDefecto" value={config.gastosAdminDefecto} onChange={handleChange} step="0.01" min="0" className={inputClass} />
+            </div>
+          </div>
+          <div className="mx-5 mb-5 bg-slate-50 border border-slate-200 rounded-lg p-3 flex gap-2">
+            <Percent className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-slate-600">
+              Se cobran en cada cuota (incluso durante períodos de gracia) y afectan el flujo del deudor,
+              por lo que la TCEA refleja el costo real del crédito, no solo la tasa de interés. Se
+              precargan al crear una nueva solicitud; se pueden ajustar por operación.
+            </p>
+          </div>
+        </div>
+
+        <div className="card-soft overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
             <Bell className="w-4 h-4 text-slate-500" />
             <p className="font-semibold text-slate-800 text-sm">Notificaciones</p>
           </div>

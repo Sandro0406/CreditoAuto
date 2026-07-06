@@ -139,6 +139,11 @@ export async function updateLoan(form: Solicitud): Promise<Solicitud> {
       start_date: payload.start_date,
       status: form.estado,
       currency_type: payload.currency_type,
+      credit_life_insurance_rate: payload.credit_life_insurance_rate,
+      risk_insurance_amount: payload.risk_insurance_amount,
+      gps_amount: payload.gps_amount,
+      postage_amount: payload.postage_amount,
+      admin_fee_amount: payload.admin_fee_amount,
     })
     .eq('id', existing.id)
     .select(`*, vehicles (*)`)

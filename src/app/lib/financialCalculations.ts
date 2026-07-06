@@ -21,6 +21,12 @@ export interface SolicitudCreditoData {
   moneda: string;
   fecha_inicio: string;
   valor_residual: string;
+  // Gastos periódicos (Compra Inteligente): se cobran cada período, incluso en gracia.
+  pct_seguro_desgravamen?: string; // % sobre saldo inicial, ej. "0.049" = 0.049%
+  seguro_riesgo?: string; // monto fijo por período
+  gps?: string; // monto fijo por período
+  portes?: string; // monto fijo por período
+  gastos_administrativos?: string; // monto fijo por período
 }
 
 export interface CronogramaRow {
@@ -35,6 +41,12 @@ export interface CronogramaRow {
   saldo_final: number;
   flujo_deudor: number;
   valor_actual: number;
+  seguro_desgravamen: number;
+  seguro_riesgo: number;
+  gps: number;
+  portes: number;
+  gastos_administrativos: number;
+  gastos_periodo: number;
 }
 
 export interface IndicadoresTransparencia {
@@ -52,6 +64,7 @@ export interface IndicadoresTransparencia {
   cuota_francesa: number;
   valor_residual: number;
   flujos: number[];
+  total_gastos: number;
 }
 
 export interface ResultadoCredito {
@@ -192,6 +205,13 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
   const tasaDescuentoAnual = toNumber(solicitud.tasa_descuento) / 100;
   const tasaDescuentoPeriodica = convertirTasaEfectivaPeriodo(tasaDescuentoAnual, diasPeriodo);
 
+  // Gastos periódicos (Compra Inteligente): se cobran todos los períodos, incluso en gracia.
+  const pctSegDesPeriodo = toNumber(solicitud.pct_seguro_desgravamen) / 100;
+  const segRiePeriodo = toNumber(solicitud.seguro_riesgo);
+  const gpsPeriodo = toNumber(solicitud.gps);
+  const portesPeriodo = toNumber(solicitud.portes);
+  const gastosAdminPeriodo = toNumber(solicitud.gastos_administrativos);
+
   const cronograma: CronogramaRow[] = [];
   // Flujo del deudor: período 0 = monto recibido (positivo),
   // períodos siguientes = cuotas pagadas (negativas).
@@ -200,6 +220,7 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
   let cuotaFrancesa = 0;
   let totalIntereses = 0;
   let totalPagado = 0;
+  let totalGastos = 0;
 
   for (let periodo = 1; periodo <= numeroPeriodos; periodo += 1) {
     const saldoInicial = roundMoney(saldo);
@@ -208,6 +229,16 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
     let cuota = 0;
     let valorResidualPagado = 0;
     let tipoPeriodo: CronogramaRow['tipo_periodo'] = 'Normal';
+
+    // Gastos se cobran cada período (incluso en gracia), sobre el saldo vigente.
+    const seguroDesgravamen = roundMoney(saldoInicial * pctSegDesPeriodo);
+    const seguroRiesgo = roundMoney(segRiePeriodo);
+    const gpsMonto = roundMoney(gpsPeriodo);
+    const portesMonto = roundMoney(portesPeriodo);
+    const gastosAdminMonto = roundMoney(gastosAdminPeriodo);
+    const gastosPeriodo = roundMoney(
+      seguroDesgravamen + seguroRiesgo + gpsMonto + portesMonto + gastosAdminMonto
+    );
 
     const estaEnGracia = tipoGracia !== 'Ninguno' && periodo <= periodosGracia;
 
@@ -243,12 +274,13 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
       }
     }
 
-    const flujoDeudor = roundMoney(-cuota);
+    const flujoDeudor = roundMoney(-(cuota + gastosPeriodo));
     const valorActual = roundMoney(flujoDeudor / Math.pow(1 + tasaDescuentoPeriodica, periodo));
 
     flujos.push(flujoDeudor);
     totalIntereses = roundMoney(totalIntereses + interes);
     totalPagado = roundMoney(totalPagado + cuota);
+    totalGastos = roundMoney(totalGastos + gastosPeriodo);
 
     cronograma.push({
       numero_cuota: periodo,
@@ -262,6 +294,12 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
       saldo_final: saldo,
       flujo_deudor: flujoDeudor,
       valor_actual: valorActual,
+      seguro_desgravamen: seguroDesgravamen,
+      seguro_riesgo: seguroRiesgo,
+      gps: gpsMonto,
+      portes: portesMonto,
+      gastos_administrativos: gastosAdminMonto,
+      gastos_periodo: gastosPeriodo,
     });
   }
 
@@ -288,6 +326,7 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
       cuota_francesa: cuotaFrancesa,
       valor_residual: roundMoney(valorResidual),
       flujos,
+      total_gastos: totalGastos,
     },
   };
 }

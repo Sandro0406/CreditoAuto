@@ -79,6 +79,11 @@ export default function TablaAmortizacion() {
             moneda: selectedSolicitud.moneda,
             fecha_inicio: selectedSolicitud.fecha_inicio,
             valor_residual: selectedSolicitud.valor_residual,
+            pct_seguro_desgravamen: selectedSolicitud.pct_seguro_desgravamen,
+            seguro_riesgo: selectedSolicitud.seguro_riesgo,
+            gps: selectedSolicitud.gps,
+            portes: selectedSolicitud.portes,
+            gastos_administrativos: selectedSolicitud.gastos_administrativos,
           });
           setResultado(calc);
         }
@@ -107,11 +112,11 @@ export default function TablaAmortizacion() {
 
   const exportarCSV = () => {
     if (!resultado) return;
-    const headers = ['N°', 'Fecha', 'Tipo', 'Saldo Inicial', 'Interés', 'Amortización', 'Cuota', 'Valor Residual', 'Saldo Final', 'Flujo Deudor', 'Valor Actual'];
+    const headers = ['N°', 'Fecha', 'Tipo', 'Saldo Inicial', 'Interés', 'Amortización', 'Cuota', 'Valor Residual', 'Gastos', 'Saldo Final', 'Flujo Deudor', 'Valor Actual'];
     const rows = resultado.cronograma.map(r => [
       r.numero_cuota, r.fecha_pago, r.tipo_periodo,
       r.saldo_inicial, r.interes, r.amortizacion, r.cuota,
-      r.valor_residual_pagado, r.saldo_final, r.flujo_deudor, r.valor_actual,
+      r.valor_residual_pagado, r.gastos_periodo, r.saldo_final, r.flujo_deudor, r.valor_actual,
     ]);
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -177,11 +182,12 @@ export default function TablaAmortizacion() {
         {selectedSolicitud && resultado && (
           <>
             {/* KPI summary cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
               {[
                 ['Monto financiado', formatMoney(resultado.indicadores.monto_prestamo, currency), 'text-slate-900', 'Monto del préstamo que se financia: precio del vehículo menos la cuota inicial.'],
                 ['Cuota francesa', formatMoney(resultado.indicadores.cuota_francesa, currency), 'text-brand-700', 'Cuota fija mensual del método francés. Cada cuota incluye intereses más amortización del capital.'],
                 ['Valor residual', formatMoney(resultado.indicadores.valor_residual, currency), 'text-slate-900', 'Cuota balón que se paga al final del crédito en la modalidad Compra Inteligente.'],
+                ['Total gastos', formatMoney(resultado.indicadores.total_gastos, currency), 'text-slate-900', 'Suma de seguro de desgravamen, seguro de riesgo, GPS, portes y gastos administrativos de todas las cuotas. Se cobran incluso en gracia y elevan la TCEA por encima de la TEA.'],
                 ['VAN deudor', formatMoney(resultado.indicadores.van, currency), resultado.indicadores.van >= 0 ? 'text-slate-900' : 'text-red-700', 'Valor Actual Neto de los flujos desde la perspectiva del deudor, descontados a la tasa pactada. Negativo = costo financiero para el cliente.'],
                 ['TCEA', formatPercent(resultado.indicadores.tcea), 'text-slate-900', 'Tasa de Costo Efectivo Anual: costo total real del crédito en un año, incluyendo intereses y cargos.'],
               ].map(([label, value, textColor, hint]) => (
@@ -235,7 +241,7 @@ export default function TablaAmortizacion() {
                         {[
                           'N°', 'Fecha', 'Tipo',
                           'Saldo Inicial', 'Interés', 'Amortización',
-                          'Cuota', 'Val. Residual', 'Saldo Final',
+                          'Cuota', 'Val. Residual', 'Gastos', 'Saldo Final',
                           'Flujo Deudor', 'Valor Actual',
                         ].map((h) => (
                           <th key={h} className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
@@ -243,6 +249,9 @@ export default function TablaAmortizacion() {
                               {h}
                               {h === 'Tipo' && (
                                 <InfoHint text="Tipo de período: N = Normal (paga cuota completa) · GT = Gracia Total (no paga; el interés se capitaliza) · GP = Gracia Parcial (solo paga intereses)." />
+                              )}
+                              {h === 'Gastos' && (
+                                <InfoHint text="Seguro de desgravamen + seguro de riesgo + GPS + portes + gastos administrativos de este período. Se cobran incluso en gracia y forman parte del Flujo Deudor." />
                               )}
                             </span>
                           </th>
@@ -267,6 +276,7 @@ export default function TablaAmortizacion() {
                           <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{formatMoney(row.amortizacion, currency)}</td>
                           <td className="px-3 py-2.5 font-semibold text-slate-800 text-xs tabular">{formatMoney(row.cuota, currency)}</td>
                           <td className="px-3 py-2.5 text-brand-700 text-xs tabular">{row.valor_residual_pagado > 0 ? formatMoney(row.valor_residual_pagado, currency) : '—'}</td>
+                          <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{row.gastos_periodo > 0 ? formatMoney(row.gastos_periodo, currency) : '—'}</td>
                           <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{formatMoney(row.saldo_final, currency)}</td>
                           <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{formatMoney(row.flujo_deudor, currency)}</td>
                           <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{formatMoney(row.valor_actual, currency)}</td>
@@ -281,6 +291,7 @@ export default function TablaAmortizacion() {
                         <td className="px-3 py-2.5 text-xs font-semibold text-slate-600">—</td>
                         <td className="px-3 py-2.5 text-xs font-bold text-slate-900 tabular">{formatMoney(resultado.indicadores.total_pagado, currency)}</td>
                         <td className="px-3 py-2.5 text-xs font-semibold text-brand-700 tabular">{resultado.indicadores.valor_residual > 0 ? formatMoney(resultado.indicadores.valor_residual, currency) : '—'}</td>
+                        <td className="px-3 py-2.5 text-xs font-semibold text-slate-800 tabular">{formatMoney(resultado.indicadores.total_gastos, currency)}</td>
                         <td colSpan={3} />
                       </tr>
                     </tfoot>
@@ -319,6 +330,7 @@ export default function TablaAmortizacion() {
                         ['Valor Residual / Cuota Balón', resultado.indicadores.valor_residual > 0 ? formatMoney(resultado.indicadores.valor_residual, currency) : '—'],
                         ['N° de Períodos', resultado.indicadores.numero_periodos.toString()],
                         ['Total Intereses', formatMoney(resultado.indicadores.total_intereses, currency)],
+                        ['Total Gastos (seguros, GPS, portes, adm.)', formatMoney(resultado.indicadores.total_gastos, currency)],
                         ['Total Pagado (incluye balón)', formatMoney(resultado.indicadores.total_pagado, currency)],
                         ['Cuota Mensual (francesa)', formatMoney(resultado.indicadores.cuota_francesa, currency)],
                       ].map(([label, value]) => (
@@ -349,7 +361,8 @@ export default function TablaAmortizacion() {
                         <p className="text-xs text-slate-400 uppercase tracking-wide">TCEA / TIR Anual Deudor</p>
                         <p className="text-2xl font-bold text-slate-900 mt-1 tabular">{formatPercent(resultado.indicadores.tcea)}</p>
                         <p className="text-xs text-slate-500 mt-1">
-                          Costo efectivo anual del crédito desde la perspectiva del deudor. Equivale a la TEA cuando no hay costos adicionales.
+                          Costo efectivo anual del crédito desde la perspectiva del deudor. Incluye seguros y
+                          gastos periódicos; equivale a la TEA solo cuando esos costos son cero.
                         </p>
                       </div>
                     </div>
@@ -367,8 +380,9 @@ export default function TablaAmortizacion() {
                       {resultado.indicadores.valor_residual > 0 && (
                         <li>Cuota balón (Compra Inteligente): {formatMoney(resultado.indicadores.valor_residual, currency)} — última cuota</li>
                       )}
-                      <li>Total intereses y gastos: {formatMoney(resultado.indicadores.total_intereses, currency)}</li>
-                      <li>Monto total a pagar: {formatMoney(resultado.indicadores.total_pagado, currency)}</li>
+                      <li>Total intereses: {formatMoney(resultado.indicadores.total_intereses, currency)}</li>
+                      <li>Total gastos (seguros, GPS, portes, adm.): {formatMoney(resultado.indicadores.total_gastos, currency)}</li>
+                      <li>Monto total a pagar: {formatMoney(resultado.indicadores.total_pagado + resultado.indicadores.total_gastos, currency)}</li>
                     </ul>
                   </div>
                 </div>

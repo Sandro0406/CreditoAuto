@@ -77,6 +77,39 @@ for (let i = 0; i < 3; i += 1) {
   assertClose(row.cuota, row.interes, `Caso2 cuota=interes P${i + 1}`);
 }
 
+// Caso 3: gastos periódicos (seguros, GPS, portes, gastos adm.) sobre Caso1.
+// Sin gastos (tolerancia 0), TCEA debe ser igual a TEA (Caso1). Con gastos,
+// el flujo del deudor crece y la TCEA debe superar a la TEA.
+const caso3: SolicitudCreditoData = {
+  ...caso1,
+  id: 'TEST-3',
+  pct_seguro_desgravamen: '0.049',
+  seguro_riesgo: '4',
+  gps: '20',
+  portes: '3.5',
+  gastos_administrativos: '3.5',
+};
+const r3 = calcularCreditoVehicular(caso3);
+
+assertClose(r1.indicadores.tcea, r1.indicadores.tea, 'Caso1 TCEA=TEA sin gastos', 0.0001);
+assertEqual(r1.indicadores.total_gastos, 0, 'Caso1 sin gastos');
+
+if (r3.indicadores.total_gastos <= 0) {
+  throw new Error('Caso3: total_gastos debería ser > 0');
+}
+if (r3.indicadores.tcea <= r3.indicadores.tea) {
+  throw new Error('Caso3: TCEA debería superar a la TEA cuando hay gastos periódicos');
+}
+
+const primerGastoEsperado = roundMoney(64000 * (0.049 / 100) + 4 + 20 + 3.5 + 3.5);
+assertClose(r3.cronograma[0].gastos_periodo, primerGastoEsperado, 'Caso3 gasto período 1');
+assertClose(
+  r3.cronograma[0].flujo_deudor,
+  roundMoney(-(r3.cronograma[0].cuota + primerGastoEsperado)),
+  'Caso3 flujo período 1 incluye gastos'
+);
+
 console.log('✓ validate-formulas: todos los casos §6D pasaron');
 console.log(`  Caso1: VAN=${roundMoney(r1.indicadores.van)}, TCEA=${(r1.indicadores.tcea * 100).toFixed(2)}%`);
 console.log(`  Caso2: TEM=${(r2.indicadores.tasa_periodica * 100).toFixed(4)}%, periodos=${r2.indicadores.numero_periodos}`);
+console.log(`  Caso3: total_gastos=${roundMoney(r3.indicadores.total_gastos)}, TEA=${(r3.indicadores.tea * 100).toFixed(2)}%, TCEA=${(r3.indicadores.tcea * 100).toFixed(2)}%`);

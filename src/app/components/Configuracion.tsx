@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react';
-import { Building2, DollarSign, Bell, Shield, Save, X, Percent } from 'lucide-react';
+import { Building2, DollarSign, Bell, Shield, Save, X, Percent, FileText } from 'lucide-react';
 import Layout from './Layout';
 import { getSettings, saveSettings } from '../lib/api/settings';
 import { requestBrowserNotificationPermission } from '../lib/notify';
@@ -162,6 +162,41 @@ export default function Configuracion() {
               Se cobran en cada cuota (incluso durante períodos de gracia) y afectan el flujo del deudor,
               por lo que la TCEA refleja el costo real del crédito, no solo la tasa de interés. Se
               precargan al crear una nueva solicitud; se pueden ajustar por operación.
+            </p>
+          </div>
+        </div>
+
+        <div className="card-soft overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-slate-500" />
+            <p className="font-semibold text-slate-800 text-sm">Costes Iniciales Financiados por Defecto</p>
+          </div>
+          <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Costes Notariales</label>
+              <input type="number" name="costoNotarialDefecto" value={config.costoNotarialDefecto} onChange={handleChange} step="0.01" min="0" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Costes Registrales</label>
+              <input type="number" name="costoRegistralDefecto" value={config.costoRegistralDefecto} onChange={handleChange} step="0.01" min="0" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Tasación</label>
+              <input type="number" name="costoTasacionDefecto" value={config.costoTasacionDefecto} onChange={handleChange} step="0.01" min="0" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Comisión de Estudio</label>
+              <input type="number" name="comisionEstudioDefecto" value={config.comisionEstudioDefecto} onChange={handleChange} step="0.01" min="0" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Comisión de Activación</label>
+              <input type="number" name="comisionActivacionDefecto" value={config.comisionActivacionDefecto} onChange={handleChange} step="0.01" min="0" className={inputClass} />
+            </div>
+          </div>
+          <div className="mx-5 mb-5 bg-slate-50 border border-slate-200 rounded-lg p-3 flex gap-2">
+            <FileText className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-slate-600">
+              Gastos de una sola vez al formalizar el crédito.
             </p>
           </div>
         </div>

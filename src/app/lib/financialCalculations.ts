@@ -27,12 +27,22 @@ export interface SolicitudCreditoData {
   gps?: string; // monto fijo por período
   portes?: string; // monto fijo por período
   gastos_administrativos?: string; // monto fijo por período
+  // Costes iniciales (una sola vez): se financian, se suman al monto del préstamo.
+  costo_notarial?: string;
+  costo_registral?: string;
+  costo_tasacion?: string;
+  comision_estudio?: string;
+  comision_activacion?: string;
+  // Gracia mixta: N períodos Total, luego N períodos Parcial, luego el resto Normal.
+  // Si ambos son 0/ausentes, se usa el modo legado (tipo_gracia + periodo_gracia).
+  periodos_gracia_total?: string;
+  periodos_gracia_parcial?: string;
 }
 
 export interface CronogramaRow {
   numero_cuota: number;
   fecha_pago: string;
-  tipo_periodo: 'Normal' | 'Gracia Total' | 'Gracia Parcial';
+  tipo_periodo: 'Normal' | 'Gracia Total' | 'Gracia Parcial' | 'Cuotón';
   saldo_inicial: number;
   interes: number;
   amortizacion: number;
@@ -47,6 +57,12 @@ export interface CronogramaRow {
   portes: number;
   gastos_administrativos: number;
   gastos_periodo: number;
+  // Cuotón (bloque paralelo): capitaliza interés + seguro de desgravamen
+  // durante N+1 períodos, se liquida en un período extra tras la última cuota.
+  saldo_inicial_cuoton: number;
+  interes_cuoton: number;
+  seguro_desgravamen_cuoton: number;
+  saldo_final_cuoton: number;
 }
 
 export interface IndicadoresTransparencia {
@@ -65,6 +81,8 @@ export interface IndicadoresTransparencia {
   valor_residual: number;
   flujos: number[];
   total_gastos: number;
+  costes_iniciales: number;
+  saldo_a_financiar_con_cuotas: number;
 }
 
 export interface ResultadoCredito {
@@ -103,11 +121,16 @@ export function formatPercent(value: number, decimals = 4): string {
   return `${(value * 100).toFixed(decimals)}%`;
 }
 
-// Devuelve el monto que financia el banco: precio - cuota inicial.
+// Devuelve el monto que financia el banco: precio - cuota inicial + costes
+// iniciales financiados (notariales, registrales, tasación, comisiones).
 // El valor residual (cuota balón) NO se descuenta aquí; se trata como
 // pago diferido al final del plazo (método Compra Inteligente).
-export function calcularMontoPrestamo(precioVehiculo: number, cuotaInicial: number): number {
-  return roundMoney(Math.max(precioVehiculo - cuotaInicial, 0));
+export function calcularMontoPrestamo(
+  precioVehiculo: number,
+  cuotaInicial: number,
+  costesIniciales: number = 0
+): number {
+  return roundMoney(Math.max(precioVehiculo - cuotaInicial, 0) + costesIniciales);
 }
 
 export function convertirATasaEfectivaAnual(
@@ -185,16 +208,36 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
   const cuotaInicial = toNumber(solicitud.cuota_inicial);
   const valorResidual = toNumber(solicitud.valor_residual);
 
-  // Compra Inteligente: el banco financia precio - cuota_inicial.
-  // El valor residual es la cuota balón diferida al último período.
-  const montoPrestamo = calcularMontoPrestamo(precioVehiculo, cuotaInicial);
+  // Costes iniciales (una sola vez): se financian, se suman al monto del préstamo.
+  const costesIniciales = roundMoney(
+    toNumber(solicitud.costo_notarial) +
+      toNumber(solicitud.costo_registral) +
+      toNumber(solicitud.costo_tasacion) +
+      toNumber(solicitud.comision_estudio) +
+      toNumber(solicitud.comision_activacion)
+  );
+
+  // Compra Inteligente: el banco financia precio - cuota_inicial + costes iniciales.
+  const montoPrestamo = calcularMontoPrestamo(precioVehiculo, cuotaInicial, costesIniciales);
 
   const diasPeriodo = frequencyDays[solicitud.frecuencia_pago] ?? 30;
   const totalDays = toNumber(solicitud.plazo_credito) * 30;
   const numeroPeriodos = Math.max(Math.ceil(totalDays / diasPeriodo), 1);
-  const periodosGracia = Math.min(toNumber(solicitud.periodo_gracia), numeroPeriodos);
-  const tipoGracia = solicitud.tipo_gracia || 'Ninguno';
-  const periodosNormales = Math.max(numeroPeriodos - (tipoGracia === 'Ninguno' ? 0 : periodosGracia), 1);
+
+  // Gracia mixta: N períodos Total, luego N períodos Parcial, luego el resto Normal.
+  // Modo legado (un solo tipo + contador) si no se especifican los campos nuevos.
+  let periodosGraciaTotal = toNumber(solicitud.periodos_gracia_total);
+  let periodosGraciaParcial = toNumber(solicitud.periodos_gracia_parcial);
+  if (periodosGraciaTotal === 0 && periodosGraciaParcial === 0) {
+    const periodoGraciaLegado = Math.min(toNumber(solicitud.periodo_gracia), numeroPeriodos);
+    if (solicitud.tipo_gracia === 'Total') periodosGraciaTotal = periodoGraciaLegado;
+    else if (solicitud.tipo_gracia === 'Parcial') periodosGraciaParcial = periodoGraciaLegado;
+  }
+  periodosGraciaTotal = Math.min(Math.max(periodosGraciaTotal, 0), numeroPeriodos);
+  periodosGraciaParcial = Math.min(
+    Math.max(periodosGraciaParcial, 0),
+    Math.max(numeroPeriodos - periodosGraciaTotal, 0)
+  );
 
   const tea = convertirATasaEfectivaAnual(
     toNumber(solicitud.tasa_interes),
@@ -212,11 +255,23 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
   const portesPeriodo = toNumber(solicitud.portes);
   const gastosAdminPeriodo = toNumber(solicitud.gastos_administrativos);
 
+  // Cuotón: cronograma paralelo que capitaliza interés + seguro de desgravamen
+  // y vence un período después de la última cuota regular (N+1), como en el
+  // modelo "Compra Inteligente" del banco. Su valor presente se resta del
+  // monto financiado antes de calcular la cuota regular.
+  const tasaCapCuoton = tasaPeriodica + pctSegDesPeriodo;
+  const maduracionCuoton = numeroPeriodos + 1;
+  const vpCuoton = valorResidual > 0
+    ? roundMoney(valorResidual / Math.pow(1 + tasaCapCuoton, maduracionCuoton))
+    : 0;
+  const saldoAFinanciarConCuotas = roundMoney(Math.max(montoPrestamo - vpCuoton, 0));
+
   const cronograma: CronogramaRow[] = [];
   // Flujo del deudor: período 0 = monto recibido (positivo),
-  // períodos siguientes = cuotas pagadas (negativas).
+  // períodos siguientes = cuotas + gastos pagados (negativas).
   const flujos: number[] = [montoPrestamo];
-  let saldo = montoPrestamo;
+  let saldo = saldoAFinanciarConCuotas;
+  let saldoCuoton = vpCuoton;
   let cuotaFrancesa = 0;
   let totalIntereses = 0;
   let totalPagado = 0;
@@ -227,10 +282,15 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
     let interes = roundMoney(saldoInicial * tasaPeriodica);
     let amortizacion = 0;
     let cuota = 0;
-    let valorResidualPagado = 0;
     let tipoPeriodo: CronogramaRow['tipo_periodo'] = 'Normal';
 
-    // Gastos se cobran cada período (incluso en gracia), sobre el saldo vigente.
+    // El cuotón capitaliza en paralelo cada período; no se paga hasta el final.
+    const saldoInicialCuoton = roundMoney(saldoCuoton);
+    const interesCuoton = roundMoney(saldoInicialCuoton * tasaPeriodica);
+    const segDesCuoton = roundMoney(saldoInicialCuoton * pctSegDesPeriodo);
+    saldoCuoton = roundMoney(saldoInicialCuoton + interesCuoton + segDesCuoton);
+
+    // Gastos se cobran cada período (incluso en gracia), sobre el saldo regular vigente.
     const seguroDesgravamen = roundMoney(saldoInicial * pctSegDesPeriodo);
     const seguroRiesgo = roundMoney(segRiePeriodo);
     const gpsMonto = roundMoney(gpsPeriodo);
@@ -240,38 +300,33 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
       seguroDesgravamen + seguroRiesgo + gpsMonto + portesMonto + gastosAdminMonto
     );
 
-    const estaEnGracia = tipoGracia !== 'Ninguno' && periodo <= periodosGracia;
+    const estaEnGraciaTotal = periodo <= periodosGraciaTotal;
+    const estaEnGraciaParcial = !estaEnGraciaTotal && periodo <= periodosGraciaTotal + periodosGraciaParcial;
 
-    if (estaEnGracia && tipoGracia === 'Total') {
+    if (estaEnGraciaTotal) {
       tipoPeriodo = 'Gracia Total';
       cuota = 0;
       amortizacion = 0;
       saldo = roundMoney(saldoInicial + interes);
-    } else if (estaEnGracia && tipoGracia === 'Parcial') {
+    } else if (estaEnGraciaParcial) {
       tipoPeriodo = 'Gracia Parcial';
       cuota = interes;
       amortizacion = 0;
       saldo = saldoInicial;
     } else {
       if (cuotaFrancesa === 0) {
+        // La cuota fija (constante) se calcula con la tasa combinada
+        // (interés + % seguro de desgravamen): así es como el seguro,
+        // que decrece con el saldo, queda "empaquetado" dentro de un
+        // pago constante — igual que el Excel modelo ("Cuota inc Seg Des").
         const periodosRestantes = numeroPeriodos - periodo + 1;
-        const vrPV = valorResidual > 0
-          ? valorResidual / Math.pow(1 + tasaPeriodica, periodosRestantes)
-          : 0;
-        const baseCalculo = Math.max(saldoInicial - vrPV, 0);
-        cuotaFrancesa = calcularCuotaFrancesa(baseCalculo, tasaPeriodica, periodosRestantes);
+        cuotaFrancesa = calcularCuotaFrancesa(saldoInicial, tasaPeriodica + pctSegDesPeriodo, periodosRestantes);
       }
 
-      cuota = cuotaFrancesa;
+      // cuota (pura) = cuota fija - seguro de desgravamen de este período.
+      cuota = roundMoney(cuotaFrancesa - seguroDesgravamen);
       amortizacion = roundMoney(cuota - interes);
       saldo = roundMoney(Math.max(saldoInicial - amortizacion, 0));
-
-      if (periodo === numeroPeriodos && valorResidual > 0) {
-        valorResidualPagado = roundMoney(valorResidual);
-        cuota = roundMoney(cuota + valorResidual);
-        amortizacion = roundMoney(amortizacion + valorResidual);
-        saldo = 0;
-      }
     }
 
     const flujoDeudor = roundMoney(-(cuota + gastosPeriodo));
@@ -290,7 +345,7 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
       interes,
       amortizacion,
       cuota,
-      valor_residual_pagado: valorResidualPagado,
+      valor_residual_pagado: 0,
       saldo_final: saldo,
       flujo_deudor: flujoDeudor,
       valor_actual: valorActual,
@@ -300,6 +355,58 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
       portes: portesMonto,
       gastos_administrativos: gastosAdminMonto,
       gastos_periodo: gastosPeriodo,
+      saldo_inicial_cuoton: saldoInicialCuoton,
+      interes_cuoton: interesCuoton,
+      seguro_desgravamen_cuoton: segDesCuoton,
+      saldo_final_cuoton: saldoCuoton,
+    });
+  }
+
+  // Período N+1: liquidación del cuotón (solo si hay valor residual).
+  if (valorResidual > 0) {
+    const periodo = numeroPeriodos + 1;
+    const saldoInicialCuoton = roundMoney(saldoCuoton);
+    const interesCuoton = roundMoney(saldoInicialCuoton * tasaPeriodica);
+    const segDesCuoton = roundMoney(saldoInicialCuoton * pctSegDesPeriodo);
+    const valorResidualPagado = roundMoney(valorResidual);
+
+    // El saldo regular ya está en 0; solo se cobran los gastos fijos (no el
+    // seguro de desgravamen regular, que se calcula sobre saldo=0).
+    const seguroRiesgo = roundMoney(segRiePeriodo);
+    const gpsMonto = roundMoney(gpsPeriodo);
+    const portesMonto = roundMoney(portesPeriodo);
+    const gastosAdminMonto = roundMoney(gastosAdminPeriodo);
+    const gastosPeriodo = roundMoney(seguroRiesgo + gpsMonto + portesMonto + gastosAdminMonto);
+
+    const flujoDeudor = roundMoney(-(valorResidualPagado + gastosPeriodo));
+    const valorActual = roundMoney(flujoDeudor / Math.pow(1 + tasaDescuentoPeriodica, periodo));
+
+    flujos.push(flujoDeudor);
+    totalPagado = roundMoney(totalPagado + valorResidualPagado);
+    totalGastos = roundMoney(totalGastos + gastosPeriodo);
+
+    cronograma.push({
+      numero_cuota: periodo,
+      fecha_pago: addDays(solicitud.fecha_inicio, periodo * diasPeriodo),
+      tipo_periodo: 'Cuotón',
+      saldo_inicial: 0,
+      interes: 0,
+      amortizacion: 0,
+      cuota: 0,
+      valor_residual_pagado: valorResidualPagado,
+      saldo_final: 0,
+      flujo_deudor: flujoDeudor,
+      valor_actual: valorActual,
+      seguro_desgravamen: 0,
+      seguro_riesgo: seguroRiesgo,
+      gps: gpsMonto,
+      portes: portesMonto,
+      gastos_administrativos: gastosAdminMonto,
+      gastos_periodo: gastosPeriodo,
+      saldo_inicial_cuoton: saldoInicialCuoton,
+      interes_cuoton: interesCuoton,
+      seguro_desgravamen_cuoton: segDesCuoton,
+      saldo_final_cuoton: 0,
     });
   }
 
@@ -327,6 +434,8 @@ export function calcularCreditoVehicular(solicitud: SolicitudCreditoData): Resul
       valor_residual: roundMoney(valorResidual),
       flujos,
       total_gastos: totalGastos,
+      costes_iniciales: costesIniciales,
+      saldo_a_financiar_con_cuotas: saldoAFinanciarConCuotas,
     },
   };
 }

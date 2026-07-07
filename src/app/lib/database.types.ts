@@ -94,6 +94,13 @@ export interface Database {
           gps_amount: number;
           postage_amount: number;
           admin_fee_amount: number;
+          notarial_cost: number;
+          registry_cost: number;
+          appraisal_cost: number;
+          processing_fee: number;
+          activation_fee: number;
+          grace_periods_total: number;
+          grace_periods_partial: number;
         };
         Insert: {
           id?: string;
@@ -122,6 +129,13 @@ export interface Database {
           gps_amount?: number;
           postage_amount?: number;
           admin_fee_amount?: number;
+          notarial_cost?: number;
+          registry_cost?: number;
+          appraisal_cost?: number;
+          processing_fee?: number;
+          activation_fee?: number;
+          grace_periods_total?: number;
+          grace_periods_partial?: number;
         };
         Update: Partial<Database['public']['Tables']['loans']['Insert']>;
       };
@@ -145,6 +159,10 @@ export interface Database {
           gps: number;
           postage: number;
           admin_fee: number;
+          balloon_initial_balance: number;
+          balloon_interest: number;
+          balloon_credit_life_insurance: number;
+          balloon_final_balance: number;
         };
         Insert: {
           id?: number;
@@ -165,6 +183,10 @@ export interface Database {
           gps?: number;
           postage?: number;
           admin_fee?: number;
+          balloon_initial_balance?: number;
+          balloon_interest?: number;
+          balloon_credit_life_insurance?: number;
+          balloon_final_balance?: number;
         };
         Update: Partial<Database['public']['Tables']['payment_schedule']['Insert']>;
       };
@@ -188,6 +210,8 @@ export interface Database {
           calculation_snapshot: Json;
           created_at: string;
           total_expenses: number;
+          initial_costs: number;
+          regular_schedule_amount: number;
         };
         Insert: {
           id?: number;
@@ -208,6 +232,8 @@ export interface Database {
           calculation_snapshot?: Json;
           created_at?: string;
           total_expenses?: number;
+          initial_costs?: number;
+          regular_schedule_amount?: number;
         };
         Update: Partial<Database['public']['Tables']['financial_indicators']['Insert']>;
       };

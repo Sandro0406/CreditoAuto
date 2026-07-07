@@ -62,6 +62,21 @@ export function loanToSolicitud(
     gps: String(moneyFromDb(loan.gps_amount)),
     portes: String(moneyFromDb(loan.postage_amount)),
     gastos_administrativos: String(moneyFromDb(loan.admin_fee_amount)),
+    costo_notarial: String(moneyFromDb(loan.notarial_cost)),
+    costo_registral: String(moneyFromDb(loan.registry_cost)),
+    costo_tasacion: String(moneyFromDb(loan.appraisal_cost)),
+    comision_estudio: String(moneyFromDb(loan.processing_fee)),
+    comision_activacion: String(moneyFromDb(loan.activation_fee)),
+    // Si no hay contadores de gracia mixta (registros anteriores a esta
+    // migración), se derivan del modo legado (un solo tipo + contador).
+    periodos_gracia_total: String(
+      loan.grace_periods_total ||
+        (loan.grace_period_type === 'Total' ? loan.number_of_grace_periods : 0)
+    ),
+    periodos_gracia_parcial: String(
+      loan.grace_periods_partial ||
+        (loan.grace_period_type === 'Parcial' ? loan.number_of_grace_periods : 0)
+    ),
   };
 }
 
@@ -99,5 +114,12 @@ export function solicitudToLoanPayload(
     gps_amount: moneyToDb(data.gps || 0),
     postage_amount: moneyToDb(data.portes || 0),
     admin_fee_amount: moneyToDb(data.gastos_administrativos || 0),
+    notarial_cost: moneyToDb(data.costo_notarial || 0),
+    registry_cost: moneyToDb(data.costo_registral || 0),
+    appraisal_cost: moneyToDb(data.costo_tasacion || 0),
+    processing_fee: moneyToDb(data.comision_estudio || 0),
+    activation_fee: moneyToDb(data.comision_activacion || 0),
+    grace_periods_total: Number(data.periodos_gracia_total || 0),
+    grace_periods_partial: Number(data.periodos_gracia_parcial || 0),
   };
 }

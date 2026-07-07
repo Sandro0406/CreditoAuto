@@ -33,6 +33,13 @@ function solicitudToCalcData(s: Solicitud): SolicitudCreditoData {
     gps: s.gps,
     portes: s.portes,
     gastos_administrativos: s.gastos_administrativos,
+    costo_notarial: s.costo_notarial,
+    costo_registral: s.costo_registral,
+    costo_tasacion: s.costo_tasacion,
+    comision_estudio: s.comision_estudio,
+    comision_activacion: s.comision_activacion,
+    periodos_gracia_total: s.periodos_gracia_total,
+    periodos_gracia_parcial: s.periodos_gracia_parcial,
   };
 }
 
@@ -72,6 +79,10 @@ export async function persistAmortization(
     gps: moneyToDb(row.gps),
     postage: moneyToDb(row.portes),
     admin_fee: moneyToDb(row.gastos_administrativos),
+    balloon_initial_balance: moneyToDb(row.saldo_inicial_cuoton),
+    balloon_interest: moneyToDb(row.interes_cuoton),
+    balloon_credit_life_insurance: moneyToDb(row.seguro_desgravamen_cuoton),
+    balloon_final_balance: moneyToDb(row.saldo_final_cuoton),
   }));
 
   const { error: schedErr } = await supabase.from('payment_schedule').insert(scheduleRows);
@@ -94,6 +105,8 @@ export async function persistAmortization(
     residual_value: moneyToDb(indicadores.valor_residual),
     calculation_snapshot: { flujos: indicadores.flujos },
     total_expenses: moneyToDb(indicadores.total_gastos),
+    initial_costs: moneyToDb(indicadores.costes_iniciales),
+    regular_schedule_amount: moneyToDb(indicadores.saldo_a_financiar_con_cuotas),
   });
   if (indErr) throw indErr;
 }
@@ -142,6 +155,10 @@ export async function loadPersistedAmortization(loanExternalCode: string) {
       portes,
       gastos_administrativos: gastosAdministrativos,
       gastos_periodo: seguroDesgravamen + seguroRiesgo + gps + portes + gastosAdministrativos,
+      saldo_inicial_cuoton: moneyFromDb(r.balloon_initial_balance),
+      interes_cuoton: moneyFromDb(r.balloon_interest),
+      seguro_desgravamen_cuoton: moneyFromDb(r.balloon_credit_life_insurance),
+      saldo_final_cuoton: moneyFromDb(r.balloon_final_balance),
     };
   });
 
@@ -162,6 +179,8 @@ export async function loadPersistedAmortization(loanExternalCode: string) {
     valor_residual: moneyFromDb(indicators.residual_value),
     flujos: snapshot.flujos || [],
     total_gastos: moneyFromDb(indicators.total_expenses),
+    costes_iniciales: moneyFromDb(indicators.initial_costs),
+    saldo_a_financiar_con_cuotas: moneyFromDb(indicators.regular_schedule_amount),
   };
 
   return { cronograma, indicadores };

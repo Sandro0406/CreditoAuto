@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import { calcularMontoPrestamo } from '../financialCalculations';
+import { calcularMontoPrestamo, toNumber } from '../financialCalculations';
 import { resolveInitialLoanStatus } from '../approval';
 import { notifyLoanCreated, notifyLoanStatusChanged } from '../notify';
 import { getSettings } from './settings';
@@ -11,6 +11,16 @@ async function getUserId(): Promise<string> {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) throw new Error('No autenticado');
   return user.id;
+}
+
+function sumaCostesIniciales(form: Partial<Solicitud>): number {
+  return (
+    toNumber(form.costo_notarial) +
+    toNumber(form.costo_registral) +
+    toNumber(form.costo_tasacion) +
+    toNumber(form.comision_estudio) +
+    toNumber(form.comision_activacion)
+  );
 }
 
 export async function getLoans(): Promise<Solicitud[]> {
@@ -46,7 +56,8 @@ export async function createLoan(form: Partial<Solicitud>): Promise<Solicitud> {
   const externalCode = `SOL-${Date.now()}`;
   const financed = calcularMontoPrestamo(
     Number(form.precio_vehiculo),
-    Number(form.cuota_inicial)
+    Number(form.cuota_inicial),
+    sumaCostesIniciales(form)
   );
 
   const { data: vehicle, error: vErr } = await supabase
@@ -91,7 +102,8 @@ export async function updateLoan(form: Solicitud): Promise<Solicitud> {
   const userId = await getUserId();
   const financed = calcularMontoPrestamo(
     Number(form.precio_vehiculo),
-    Number(form.cuota_inicial)
+    Number(form.cuota_inicial),
+    sumaCostesIniciales(form)
   );
 
   const { data: existing, error: findErr } = await supabase
@@ -144,6 +156,13 @@ export async function updateLoan(form: Solicitud): Promise<Solicitud> {
       gps_amount: payload.gps_amount,
       postage_amount: payload.postage_amount,
       admin_fee_amount: payload.admin_fee_amount,
+      notarial_cost: payload.notarial_cost,
+      registry_cost: payload.registry_cost,
+      appraisal_cost: payload.appraisal_cost,
+      processing_fee: payload.processing_fee,
+      activation_fee: payload.activation_fee,
+      grace_periods_total: payload.grace_periods_total,
+      grace_periods_partial: payload.grace_periods_partial,
     })
     .eq('id', existing.id)
     .select(`*, vehicles (*)`)

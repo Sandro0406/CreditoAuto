@@ -1,10 +1,11 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
-import { Car, CreditCard, Clock, Save, X, User, ShieldCheck } from 'lucide-react';
+import { Car, CreditCard, Clock, Save, X, User, ShieldCheck, FileText } from 'lucide-react';
 import Layout from './Layout';
 import { calcularMontoPrestamo, toNumber } from '../lib/financialCalculations';
 import { getClients } from '../lib/api/clients';
 import { createLoan, updateLoan, getLoanByExternalCode } from '../lib/api/loans';
+import { calculateAndPersistAmortization } from '../lib/api/amortization';
 import { getSettings } from '../lib/api/settings';
 import { validateLoanAgainstSettings } from '../lib/approval';
 import { useAppSettings } from '../context/SettingsContext';
@@ -33,6 +34,13 @@ const emptyForm = {
   gps: '',
   portes: '',
   gastos_administrativos: '',
+  costo_notarial: '',
+  costo_registral: '',
+  costo_tasacion: '',
+  comision_estudio: '',
+  comision_activacion: '',
+  periodos_gracia_total: '0',
+  periodos_gracia_parcial: '0',
 };
 
 export default function SolicitudCredito() {
@@ -64,6 +72,11 @@ export default function SolicitudCredito() {
         gps: cfg.gpsDefecto,
         portes: cfg.portesDefecto,
         gastos_administrativos: cfg.gastosAdminDefecto,
+        costo_notarial: cfg.costoNotarialDefecto,
+        costo_registral: cfg.costoRegistralDefecto,
+        costo_tasacion: cfg.costoTasacionDefecto,
+        comision_estudio: cfg.comisionEstudioDefecto,
+        comision_activacion: cfg.comisionActivacionDefecto,
       }));
     } catch {
       // defaults already set
@@ -107,6 +120,12 @@ export default function SolicitudCredito() {
     const precioVehiculo = toNumber(formData.precio_vehiculo);
     const cuotaInicial = toNumber(formData.cuota_inicial);
     const valorResidual = toNumber(formData.valor_residual);
+    const costesIniciales =
+      toNumber(formData.costo_notarial) +
+      toNumber(formData.costo_registral) +
+      toNumber(formData.costo_tasacion) +
+      toNumber(formData.comision_estudio) +
+      toNumber(formData.comision_activacion);
 
     if (cuotaInicial >= precioVehiculo) {
       alert('La cuota inicial debe ser menor al precio del vehículo.');
@@ -118,7 +137,7 @@ export default function SolicitudCredito() {
     }
 
     const plazo = toNumber(formData.plazo_credito);
-    const financed = calcularMontoPrestamo(precioVehiculo, cuotaInicial);
+    const financed = calcularMontoPrestamo(precioVehiculo, cuotaInicial, costesIniciales);
     const limitError = validateLoanAgainstSettings(financed, plazo, settings);
     if (limitError) {
       setError(limitError);
@@ -128,13 +147,16 @@ export default function SolicitudCredito() {
     setSaving(true);
     try {
       if (isEdit && solicitudEditar) {
-        await updateLoan({
+        const actualizada = await updateLoan({
           ...formData,
           id: solicitudEditar.id,
-          monto_prestamo: calcularMontoPrestamo(precioVehiculo, cuotaInicial).toFixed(2),
+          monto_prestamo: calcularMontoPrestamo(precioVehiculo, cuotaInicial, costesIniciales).toFixed(2),
           fecha_solicitud: solicitudEditar.fecha_solicitud,
           estado: solicitudEditar.estado,
         } as Solicitud);
+        // Recalcula y persiste el cronograma con los datos nuevos: evita que
+        // Cálculos Financieros quede mostrando un cronograma desactualizado.
+        await calculateAndPersistAmortization(actualizada);
         alert('Solicitud actualizada exitosamente');
         navigate(paths.solicitudDetalle(solicitudEditar.id));
       } else {
@@ -161,7 +183,13 @@ export default function SolicitudCredito() {
   const precioNum = toNumber(formData.precio_vehiculo);
   const cuotaInicialNum = toNumber(formData.cuota_inicial);
   const vrNum = toNumber(formData.valor_residual);
-  const montoFinanciado = Math.max(precioNum - cuotaInicialNum, 0);
+  const costesInicialesNum =
+    toNumber(formData.costo_notarial) +
+    toNumber(formData.costo_registral) +
+    toNumber(formData.costo_tasacion) +
+    toNumber(formData.comision_estudio) +
+    toNumber(formData.comision_activacion);
+  const montoFinanciado = Math.max(precioNum - cuotaInicialNum, 0) + costesInicialesNum;
   const sym = formData.moneda === 'Soles' ? 'S/' : '$';
 
   if (loading) {
@@ -340,8 +368,7 @@ export default function SolicitudCredito() {
           </div>
           <div className="mx-5 mb-5 bg-slate-50 border border-slate-200 rounded-lg p-3">
             <p className="text-xs text-slate-500">
-              Se cobran cada período (incluso en gracia) y afectan el flujo del deudor: por eso la TCEA
-              puede ser mayor a la TEA.
+              Se cobran cada período (incluso en gracia) y afectan el flujo del deudor
             </p>
           </div>
         </div>
@@ -353,19 +380,55 @@ export default function SolicitudCredito() {
           </div>
           <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Tipo de Gracia *</label>
-              <select name="tipo_gracia" value={formData.tipo_gracia} onChange={handleChange} className={selectClass} required>
-                <option value="Ninguno">Ninguno</option>
-                <option value="Total">Total</option>
-                <option value="Parcial">Parcial</option>
-              </select>
+              <label className={labelClass}>Períodos de Gracia Total</label>
+              <input type="number" name="periodos_gracia_total" value={formData.periodos_gracia_total} onChange={handleChange} className={inputClass} min="0" max="99" />
+              <p className={hintClass}>No paga cuota; el interés se capitaliza</p>
             </div>
-            {formData.tipo_gracia !== 'Ninguno' && (
-              <div>
-                <label className={labelClass}>N° Periodos de Gracia *</label>
-                <input type="number" name="periodo_gracia" value={formData.periodo_gracia} onChange={handleChange} className={inputClass} required min="1" max="99" />
-              </div>
-            )}
+            <div>
+              <label className={labelClass}>Períodos de Gracia Parcial</label>
+              <input type="number" name="periodos_gracia_parcial" value={formData.periodos_gracia_parcial} onChange={handleChange} className={inputClass} min="0" max="99" />
+              <p className={hintClass}>Solo paga intereses; el saldo no cambia</p>
+            </div>
+          </div>
+          <div className="mx-5 mb-5 bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <p className="text-xs text-slate-500">
+              Se aplican en secuencia: primero los períodos de gracia Total, luego los de gracia Parcial,
+              y el resto de cuotas son normales. Deja ambos en 0 para no usar gracia.
+            </p>
+          </div>
+        </div>
+
+        <div className="card-soft overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-slate-500" />
+            <p className="font-semibold text-slate-700 text-sm">Costes Iniciales Financiados</p>
+          </div>
+          <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>Costes Notariales</label>
+              <input type="number" name="costo_notarial" value={formData.costo_notarial} onChange={handleChange} className={inputClass} step="0.01" min="0" />
+            </div>
+            <div>
+              <label className={labelClass}>Costes Registrales</label>
+              <input type="number" name="costo_registral" value={formData.costo_registral} onChange={handleChange} className={inputClass} step="0.01" min="0" />
+            </div>
+            <div>
+              <label className={labelClass}>Tasación</label>
+              <input type="number" name="costo_tasacion" value={formData.costo_tasacion} onChange={handleChange} className={inputClass} step="0.01" min="0" />
+            </div>
+            <div>
+              <label className={labelClass}>Comisión de Estudio</label>
+              <input type="number" name="comision_estudio" value={formData.comision_estudio} onChange={handleChange} className={inputClass} step="0.01" min="0" />
+            </div>
+            <div>
+              <label className={labelClass}>Comisión de Activación</label>
+              <input type="number" name="comision_activacion" value={formData.comision_activacion} onChange={handleChange} className={inputClass} step="0.01" min="0" />
+            </div>
+          </div>
+          <div className="mx-5 mb-5 bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <p className="text-xs text-slate-500">
+              Gastos de una sola vez al formalizar el crédito.
+            </p>
           </div>
         </div>
 

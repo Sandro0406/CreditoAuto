@@ -34,6 +34,13 @@ export interface Solicitud {
   gps?: string;
   portes?: string;
   gastos_administrativos?: string;
+  costo_notarial?: string;
+  costo_registral?: string;
+  costo_tasacion?: string;
+  comision_estudio?: string;
+  comision_activacion?: string;
+  periodos_gracia_total?: string;
+  periodos_gracia_parcial?: string;
 }
 
 export interface AppConfig {
@@ -53,6 +60,11 @@ export interface AppConfig {
   gpsDefecto: string;
   portesDefecto: string;
   gastosAdminDefecto: string;
+  costoNotarialDefecto: string;
+  costoRegistralDefecto: string;
+  costoTasacionDefecto: string;
+  comisionEstudioDefecto: string;
+  comisionActivacionDefecto: string;
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -72,6 +84,11 @@ export const DEFAULT_CONFIG: AppConfig = {
   gpsDefecto: '20',
   portesDefecto: '3.5',
   gastosAdminDefecto: '3.5',
+  costoNotarialDefecto: '0',
+  costoRegistralDefecto: '0',
+  costoTasacionDefecto: '0',
+  comisionEstudioDefecto: '0',
+  comisionActivacionDefecto: '0',
 };
 
 export const ADVISOR_EMAIL = 'adoa2705@gmail.com';

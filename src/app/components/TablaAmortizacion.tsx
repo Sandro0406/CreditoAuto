@@ -84,6 +84,13 @@ export default function TablaAmortizacion() {
             gps: selectedSolicitud.gps,
             portes: selectedSolicitud.portes,
             gastos_administrativos: selectedSolicitud.gastos_administrativos,
+            costo_notarial: selectedSolicitud.costo_notarial,
+            costo_registral: selectedSolicitud.costo_registral,
+            costo_tasacion: selectedSolicitud.costo_tasacion,
+            comision_estudio: selectedSolicitud.comision_estudio,
+            comision_activacion: selectedSolicitud.comision_activacion,
+            periodos_gracia_total: selectedSolicitud.periodos_gracia_total,
+            periodos_gracia_parcial: selectedSolicitud.periodos_gracia_parcial,
           });
           setResultado(calc);
         }
@@ -112,11 +119,11 @@ export default function TablaAmortizacion() {
 
   const exportarCSV = () => {
     if (!resultado) return;
-    const headers = ['N°', 'Fecha', 'Tipo', 'Saldo Inicial', 'Interés', 'Amortización', 'Cuota', 'Valor Residual', 'Gastos', 'Saldo Final', 'Flujo Deudor', 'Valor Actual'];
+    const headers = ['N°', 'Fecha', 'Tipo', 'Saldo Inicial', 'Interés', 'Amortización', 'Cuota', 'Valor Residual', 'Gastos', 'Saldo Final', 'Flujo Deudor'];
     const rows = resultado.cronograma.map(r => [
       r.numero_cuota, r.fecha_pago, r.tipo_periodo,
       r.saldo_inicial, r.interes, r.amortizacion, r.cuota,
-      r.valor_residual_pagado, r.gastos_periodo, r.saldo_final, r.flujo_deudor, r.valor_actual,
+      r.valor_residual_pagado, r.gastos_periodo, r.saldo_final, r.flujo_deudor,
     ]);
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -184,9 +191,9 @@ export default function TablaAmortizacion() {
             {/* KPI summary cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
               {[
-                ['Monto financiado', formatMoney(resultado.indicadores.monto_prestamo, currency), 'text-slate-900', 'Monto del préstamo que se financia: precio del vehículo menos la cuota inicial.'],
-                ['Cuota francesa', formatMoney(resultado.indicadores.cuota_francesa, currency), 'text-brand-700', 'Cuota fija mensual del método francés. Cada cuota incluye intereses más amortización del capital.'],
-                ['Valor residual', formatMoney(resultado.indicadores.valor_residual, currency), 'text-slate-900', 'Cuota balón que se paga al final del crédito en la modalidad Compra Inteligente.'],
+                ['Monto financiado', formatMoney(resultado.indicadores.monto_prestamo, currency), 'text-slate-900', 'Monto del préstamo que se financia: precio del vehículo menos la cuota inicial, más costes iniciales financiados (notariales, registrales, tasación, comisiones).'],
+                ['Cuota francesa', formatMoney(resultado.indicadores.cuota_francesa, currency), 'text-brand-700', 'Cuota fija mensual del método francés, incluyendo el seguro de desgravamen (que decrece con el saldo).'],
+                ['Valor residual', formatMoney(resultado.indicadores.valor_residual, currency), 'text-slate-900', 'Cuotón: valor residual que capitaliza interés y seguro de desgravamen en paralelo, y se liquida un período después de la última cuota regular.'],
                 ['Total gastos', formatMoney(resultado.indicadores.total_gastos, currency), 'text-slate-900', 'Suma de seguro de desgravamen, seguro de riesgo, GPS, portes y gastos administrativos de todas las cuotas. Se cobran incluso en gracia y elevan la TCEA por encima de la TEA.'],
                 ['VAN deudor', formatMoney(resultado.indicadores.van, currency), resultado.indicadores.van >= 0 ? 'text-slate-900' : 'text-red-700', 'Valor Actual Neto de los flujos desde la perspectiva del deudor, descontados a la tasa pactada. Negativo = costo financiero para el cliente.'],
                 ['TCEA', formatPercent(resultado.indicadores.tcea), 'text-slate-900', 'Tasa de Costo Efectivo Anual: costo total real del crédito en un año, incluyendo intereses y cargos.'],
@@ -242,13 +249,13 @@ export default function TablaAmortizacion() {
                           'N°', 'Fecha', 'Tipo',
                           'Saldo Inicial', 'Interés', 'Amortización',
                           'Cuota', 'Val. Residual', 'Gastos', 'Saldo Final',
-                          'Flujo Deudor', 'Valor Actual',
+                          'Flujo Deudor',
                         ].map((h) => (
                           <th key={h} className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
                             <span className="inline-flex items-center gap-1">
                               {h}
                               {h === 'Tipo' && (
-                                <InfoHint text="Tipo de período: N = Normal (paga cuota completa) · GT = Gracia Total (no paga; el interés se capitaliza) · GP = Gracia Parcial (solo paga intereses)." />
+                                <InfoHint text="Tipo de período: N = Normal (paga cuota completa) · GT = Gracia Total (no paga; el interés se capitaliza) · GP = Gracia Parcial (solo paga intereses) · CT = Cuotón (liquidación del valor residual, un período después de la última cuota)." />
                               )}
                               {h === 'Gastos' && (
                                 <InfoHint text="Seguro de desgravamen + seguro de riesgo + GPS + portes + gastos administrativos de este período. Se cobran incluso en gracia y forman parte del Flujo Deudor." />
@@ -266,9 +273,11 @@ export default function TablaAmortizacion() {
                           <td className="px-3 py-2.5">
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                               row.tipo_periodo === 'Normal' ? 'bg-brand-50 text-brand-700 border border-brand-200' :
-                              row.tipo_periodo === 'Gracia Total' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-600 border border-slate-200'
+                              row.tipo_periodo === 'Gracia Total' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                              row.tipo_periodo === 'Cuotón' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                              'bg-slate-100 text-slate-600 border border-slate-200'
                             }`}>
-                              {row.tipo_periodo === 'Normal' ? 'N' : row.tipo_periodo === 'Gracia Total' ? 'GT' : 'GP'}
+                              {row.tipo_periodo === 'Normal' ? 'N' : row.tipo_periodo === 'Gracia Total' ? 'GT' : row.tipo_periodo === 'Cuotón' ? 'CT' : 'GP'}
                             </span>
                           </td>
                           <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{formatMoney(row.saldo_inicial, currency)}</td>
@@ -279,7 +288,6 @@ export default function TablaAmortizacion() {
                           <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{row.gastos_periodo > 0 ? formatMoney(row.gastos_periodo, currency) : '—'}</td>
                           <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{formatMoney(row.saldo_final, currency)}</td>
                           <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{formatMoney(row.flujo_deudor, currency)}</td>
-                          <td className="px-3 py-2.5 text-slate-700 text-xs tabular">{formatMoney(row.valor_actual, currency)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -292,7 +300,7 @@ export default function TablaAmortizacion() {
                         <td className="px-3 py-2.5 text-xs font-bold text-slate-900 tabular">{formatMoney(resultado.indicadores.total_pagado, currency)}</td>
                         <td className="px-3 py-2.5 text-xs font-semibold text-brand-700 tabular">{resultado.indicadores.valor_residual > 0 ? formatMoney(resultado.indicadores.valor_residual, currency) : '—'}</td>
                         <td className="px-3 py-2.5 text-xs font-semibold text-slate-800 tabular">{formatMoney(resultado.indicadores.total_gastos, currency)}</td>
-                        <td colSpan={3} />
+                        <td colSpan={2} />
                       </tr>
                     </tfoot>
                   </table>
@@ -327,12 +335,14 @@ export default function TablaAmortizacion() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {[
                         ['Monto Financiado', formatMoney(resultado.indicadores.monto_prestamo, currency)],
-                        ['Valor Residual / Cuota Balón', resultado.indicadores.valor_residual > 0 ? formatMoney(resultado.indicadores.valor_residual, currency) : '—'],
-                        ['N° de Períodos', resultado.indicadores.numero_periodos.toString()],
+                        ['Costes Iniciales (incluidos)', formatMoney(resultado.indicadores.costes_iniciales, currency)],
+                        ['Saldo a Financiar con Cuotas', formatMoney(resultado.indicadores.saldo_a_financiar_con_cuotas, currency)],
+                        ['Valor Residual / Cuotón', resultado.indicadores.valor_residual > 0 ? formatMoney(resultado.indicadores.valor_residual, currency) : '—'],
+                        ['N° de Períodos (cuotas regulares)', resultado.indicadores.numero_periodos.toString()],
                         ['Total Intereses', formatMoney(resultado.indicadores.total_intereses, currency)],
                         ['Total Gastos (seguros, GPS, portes, adm.)', formatMoney(resultado.indicadores.total_gastos, currency)],
-                        ['Total Pagado (incluye balón)', formatMoney(resultado.indicadores.total_pagado, currency)],
-                        ['Cuota Mensual (francesa)', formatMoney(resultado.indicadores.cuota_francesa, currency)],
+                        ['Total Pagado (incluye cuotón)', formatMoney(resultado.indicadores.total_pagado, currency)],
+                        ['Cuota Mensual (francesa, inc. seg. desgravamen)', formatMoney(resultado.indicadores.cuota_francesa, currency)],
                       ].map(([label, value]) => (
                         <div key={label} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
                           <p className="text-xs text-slate-400 uppercase tracking-wide">{label}</p>
@@ -376,9 +386,12 @@ export default function TablaAmortizacion() {
                       <li>TEA aplicada: {formatPercent(resultado.indicadores.tea)}</li>
                       <li>TCEA (costo total efectivo anual): {formatPercent(resultado.indicadores.tcea)}</li>
                       <li>Número de cuotas: {resultado.indicadores.numero_periodos}</li>
-                      <li>Cuota ordinaria (francesa): {formatMoney(resultado.indicadores.cuota_francesa, currency)}</li>
+                      <li>Cuota ordinaria (francesa, inc. seg. desgravamen): {formatMoney(resultado.indicadores.cuota_francesa, currency)}</li>
+                      {resultado.indicadores.costes_iniciales > 0 && (
+                        <li>Costes iniciales financiados: {formatMoney(resultado.indicadores.costes_iniciales, currency)}</li>
+                      )}
                       {resultado.indicadores.valor_residual > 0 && (
-                        <li>Cuota balón (Compra Inteligente): {formatMoney(resultado.indicadores.valor_residual, currency)} — última cuota</li>
+                        <li>Cuotón (Compra Inteligente): {formatMoney(resultado.indicadores.valor_residual, currency)} — liquidación en el período {resultado.indicadores.numero_periodos + 1}</li>
                       )}
                       <li>Total intereses: {formatMoney(resultado.indicadores.total_intereses, currency)}</li>
                       <li>Total gastos (seguros, GPS, portes, adm.): {formatMoney(resultado.indicadores.total_gastos, currency)}</li>
